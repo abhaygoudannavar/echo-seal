@@ -1,0 +1,26 @@
+# Python env — torch alone is ~750 MB, never commit this
+.venv/
+__pycache__/
+*.pyc
+
+# Generated test audio. Regenerate with:
+#   say -v Samantha -o audio/sample.wav --data-format=LEI16@22050 "..."
+#   python test_rerecord.py prepare
+#   python test_robustness.py
+audio/robustness/
+audio/id_*.wav
+audio/wm_*.wav
+audio/sample_wm.wav
+
+# Local phone recordings from the re-record test
+audio/recording*
+*.m4a
+
+.DS_Store
+
+# Local-only: internal project brief, and auto-generated agent tooling config
+# (AWS Agent Toolkit regenerates these per machine — nothing project-specific)
+context.md
+AGENTS.md
+CLAUDE.md
+.cursor/
