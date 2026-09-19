@@ -1,52 +1,29 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Terms and conditions | EchoSeal</title>
-<meta name="description" content="Terms for using EchoSeal, including the limits of what a verification result means and what the service does not guarantee.">
-<link rel="canonical" href="https://echoseal.example/terms.html">
-<meta name="robots" content="index,follow">
+import { openGraph } from '../../lib/site';
 
-<meta property="og:type" content="article">
-<meta property="og:title" content="Terms and conditions | EchoSeal">
-<meta property="og:description" content="Terms for using EchoSeal, including the limits of what a verification result means and what the service does not guarantee.">
-<meta property="og:image" content="https://echoseal.example/img/social-preview.png">
-<meta property="og:url" content="https://echoseal.example/terms.html">
-<meta name="twitter:card" content="summary_large_image">
+const DESCRIPTION =
+  'Terms for using EchoSeal, including the limits of what a verification result means and what the service does not guarantee.';
 
-<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-<a class="skip-link" href="#main">Skip to content</a>
+export const metadata = {
+  title: 'Terms and conditions',
+  description: DESCRIPTION,
+  alternates: { canonical: '/terms/' },
+  openGraph: openGraph({
+    title: 'Terms and conditions | EchoSeal',
+    description: DESCRIPTION,
+    url: '/terms/',
+    type: 'article',
+  }),
+};
 
-<header class="site-head">
-  <div class="wrap">
-    <a class="brand" href="/">
-      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-        <circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M5.5 10h1.6l1.3-3.2 1.9 6.4 1.3-3.2h2.9" fill="none" stroke="currentColor"
-              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      EchoSeal
-    </a>
-    <nav class="site-nav" aria-label="Main">
-      <a href="/">Home</a>
-      <a href="/verify.html">Verify a call</a>
-    </nav>
-  </div>
-</header>
-
-<main id="main">
-  <div class="wrap prose">
-
-    <h1>Terms and conditions</h1>
-    <p class="lede">
+export default function Terms() {
+  return (
+    <div className="prose">
+<h1>Terms and conditions</h1>
+    <p className="lede">
       EchoSeal is a student project built for the WeMakeDevs First Commit hackathon. By
       using it you accept the terms below.
     </p>
-    <p class="note">
+    <p className="note">
       Last updated 19 September 2026. This is a demonstration rather than a commercial
       service, and these terms have not been reviewed by a lawyer.
     </p>
@@ -117,34 +94,6 @@
       These terms may change while the project is active. The date at the top reflects
       the most recent revision.
     </p>
-
-  </div>
-</main>
-
-<footer class="site-foot">
-  <div class="wrap">
-    <p style="margin:0">Built for the WeMakeDevs First Commit hackathon.</p>
-    <nav class="foot-links" aria-label="Footer">
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-    </nav>
-  </div>
-</footer>
-
-<div class="consent" id="consent" role="region" aria-label="Cookie consent" hidden>
-  <div class="wrap">
-    <p>
-      We would like to measure page performance and errors using AWS CloudWatch RUM,
-      which stores an identifier in your browser. Nothing loads until you choose.
-      See our <a href="/privacy.html">privacy policy</a>.
-    </p>
-    <div class="btn-row">
-      <button class="btn btn-secondary" type="button" data-consent="decline">Decline</button>
-      <button class="btn" type="button" data-consent="accept">Accept</button>
     </div>
-  </div>
-</div>
-
-<script src="/js/consent.js"></script>
-</body>
-</html>
+  );
+}

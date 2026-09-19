@@ -364,6 +364,16 @@ def handle_verify(event: dict) -> dict:
 # ── Router ────────────────────────────────────────────────────────────────────
 
 def lambda_handler(event: dict, context) -> dict:
+    # EventBridge pings this every 5 minutes to keep an execution environment alive.
+    # A cold start takes ~35 s (Lambda caps module-scope init at 10 s, so loading
+    # torch overruns it and the work is redone inside the invocation) and API Gateway
+    # cuts off at 30 s, so an unwarmed function returns 503 on the first request.
+    # Provisioned concurrency would be the proper fix but this account cannot reserve
+    # any — see `make warm`. Returning early keeps the ping cheap; importing this
+    # module is what actually does the warming.
+    if event.get("warmup"):
+        return {"statusCode": 200, "body": "warm"}
+
     path = event.get("rawPath", event.get("path", ""))
     method = (
         event.get("requestContext", {}).get("http", {}).get("method", "")

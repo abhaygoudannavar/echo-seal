@@ -1,53 +1,30 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Privacy policy | EchoSeal</title>
-<meta name="description" content="What EchoSeal does with audio you upload, what is stored, what is not, and how analytics consent works.">
-<link rel="canonical" href="https://echoseal.example/privacy.html">
-<meta name="robots" content="index,follow">
+import { openGraph } from '../../lib/site';
 
-<meta property="og:type" content="article">
-<meta property="og:title" content="Privacy policy | EchoSeal">
-<meta property="og:description" content="What EchoSeal does with audio you upload, what is stored, what is not, and how analytics consent works.">
-<meta property="og:image" content="https://echoseal.example/img/social-preview.png">
-<meta property="og:url" content="https://echoseal.example/privacy.html">
-<meta name="twitter:card" content="summary_large_image">
+const DESCRIPTION =
+  'What EchoSeal does with audio you upload, what is stored, what is not, and how analytics consent works.';
 
-<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-<a class="skip-link" href="#main">Skip to content</a>
+export const metadata = {
+  title: 'Privacy policy',
+  description: DESCRIPTION,
+  alternates: { canonical: '/privacy/' },
+  openGraph: openGraph({
+    title: 'Privacy policy | EchoSeal',
+    description: DESCRIPTION,
+    url: '/privacy/',
+    type: 'article',
+  }),
+};
 
-<header class="site-head">
-  <div class="wrap">
-    <a class="brand" href="/">
-      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-        <circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M5.5 10h1.6l1.3-3.2 1.9 6.4 1.3-3.2h2.9" fill="none" stroke="currentColor"
-              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      EchoSeal
-    </a>
-    <nav class="site-nav" aria-label="Main">
-      <a href="/">Home</a>
-      <a href="/verify.html">Verify a call</a>
-    </nav>
-  </div>
-</header>
-
-<main id="main">
-  <div class="wrap prose">
-
-    <h1>Privacy policy</h1>
-    <p class="lede">
+export default function Privacy() {
+  return (
+    <div className="prose">
+<h1>Privacy policy</h1>
+    <p className="lede">
       EchoSeal is a student project built for the WeMakeDevs First Commit hackathon. It
       is a demonstration, not a commercial service. This page describes exactly what the
       software does with data, in plain terms.
     </p>
-    <p class="note">
+    <p className="note">
       Last updated 19 September 2026. Because this is a hackathon project rather than an
       operating company, this policy has not been reviewed by a lawyer. Do not upload
       audio you would be unwilling to send to a third party.
@@ -87,7 +64,7 @@
     </p>
     <p>
       If you decline, the analytics script is never loaded and no identifier is stored.
-      Your choice is remembered in your browser's local storage under the key
+      Your choice is remembered in your browser&apos;s local storage under the key
       <code>echoseal.consent</code>, and nowhere else. Clearing site data resets it.
     </p>
 
@@ -116,37 +93,9 @@
 
     <h2>Contact</h2>
     <p>
-      Questions about this policy can be raised as an issue on the project's GitHub
+      Questions about this policy can be raised as an issue on the project&apos;s GitHub
       repository, which is the only channel this project runs.
     </p>
-
-  </div>
-</main>
-
-<footer class="site-foot">
-  <div class="wrap">
-    <p style="margin:0">Built for the WeMakeDevs First Commit hackathon.</p>
-    <nav class="foot-links" aria-label="Footer">
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-    </nav>
-  </div>
-</footer>
-
-<div class="consent" id="consent" role="region" aria-label="Cookie consent" hidden>
-  <div class="wrap">
-    <p>
-      We would like to measure page performance and errors using AWS CloudWatch RUM,
-      which stores an identifier in your browser. Nothing loads until you choose.
-      See our <a href="/privacy.html">privacy policy</a>.
-    </p>
-    <div class="btn-row">
-      <button class="btn btn-secondary" type="button" data-consent="decline">Decline</button>
-      <button class="btn" type="button" data-consent="accept">Accept</button>
     </div>
-  </div>
-</div>
-
-<script src="/js/consent.js"></script>
-</body>
-</html>
+  );
+}
