@@ -22,6 +22,7 @@ sample_wm.wav
 # Local phone recordings from the re-record test
 recording*
 rerecorded_capture.wav
+demo_playback_strong.wav
 listen_*.wav
 *.m4a
 

@@ -30,8 +30,10 @@ import soundfile as sf
 
 PLAYBACK = "audio/demo_playback.wav"
 CAPTURE = "audio/rerecorded_capture.wav"
-LEAD_IN = 1.0   # start recording before playback so nothing is clipped
-TAIL = 1.5
+# A wireless Continuity mic takes ~3 s to come up, so a short lead-in silently loses
+# the start of the clip. Measured: a 1.0 s lead-in produced a capture 2.7 s short.
+LEAD_IN = 5.0
+TAIL = 2.0
 
 
 def list_devices() -> list[tuple[int, str]]:
