@@ -1,0 +1,4 @@
+https://echoseal.example/
+https://echoseal.example/verify.html
+https://echoseal.example/privacy.html
+https://echoseal.example/terms.html

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EchoSeal: verify an AI voice on a phone call</title>
+<meta name="description" content="Banks watermark their AI voice assistants with EchoSeal. Anyone receiving a call can check the recording and see which registered organisation it came from.">
+<link rel="canonical" href="https://echoseal.example/">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="EchoSeal: verify an AI voice on a phone call">
+<meta property="og:description" content="Banks watermark their AI voice assistants with EchoSeal. Anyone receiving a call can check the recording and see which registered organisation it came from.">
+<meta property="og:image" content="https://echoseal.example/img/social-preview.png">
+<meta property="og:url" content="https://echoseal.example/">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/img/favicon.svg">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5.5 10h1.6l1.3-3.2 1.9 6.4 1.3-3.2h2.9" fill="none" stroke="currentColor"
+              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      EchoSeal
+    </a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/" aria-current="page">Home</a>
+      <a href="/verify.html">Verify a call</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+
+    <h1>Check whether an AI voice on a call is really your bank</h1>
+    <p class="lede">
+      Voice cloning is cheap enough that a scammer can sound exactly like your bank,
+      or like a relative in trouble. EchoSeal puts an inaudible mark inside the speech
+      of AI assistants that have registered with us, so a recording of the call can be
+      checked afterwards.
+    </p>
+
+    <div class="btn-row" style="margin-top:1.5rem">
+      <a class="btn" href="/verify.html">Check a recording</a>
+      <a class="btn btn-secondary" href="#how">How it works</a>
+    </div>
+
+    <section class="section" id="how">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li>
+          A registered organisation generates its automated call audio through EchoSeal.
+          We embed a 16 bit identifier into the sound itself.
+        </li>
+        <li>
+          The mark sits about 29 dB below the speech and follows its shape, so it is
+          inaudible. The call sounds completely ordinary.
+        </li>
+        <li>
+          Anyone with a recording can upload it here. If the mark is found, we show which
+          registered organisation it belongs to.
+        </li>
+      </ol>
+    </section>
+
+    <section class="section">
+      <h2>What this does and does not tell you</h2>
+      <div class="grid-2">
+        <div class="panel">
+          <h3 style="margin-top:0">It confirms a known caller</h3>
+          <p>
+            When the watermark is present and matches the registry, you know the audio
+            came from that organisation's registered assistant.
+          </p>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0">It does not detect fakes</h3>
+          <p>
+            Audio with no watermark is simply unverified. It could be a human, an
+            organisation that has not registered, or a scammer. Absence of a mark is not
+            evidence of fraud.
+          </p>
+        </div>
+      </div>
+      <p class="note" style="margin-top:1.25rem">
+        If a call asks for a one time password, a transfer, or remote access to your
+        device, hang up and call the number printed on your card. No verification tool
+        replaces that.
+      </p>
+    </section>
+
+    <section class="section" id="console">
+      <h2>Agent console</h2>
+      <p>
+        This is the side an organisation uses. Generate a watermarked clip, then check it
+        on the verify page to see the full round trip.
+      </p>
+
+      <div class="panel">
+        <form id="generate-form" novalidate>
+          <div class="field">
+            <label for="agent-id">Registered organisation</label>
+            <select id="agent-id" name="agent-id">
+              <option value="0">SecureBank AI Assistant</option>
+              <option value="2047">Example Telecom Support</option>
+            </select>
+            <p class="hint">
+              Two demonstration entries. The registry holds two because over the air
+              re-recording corrupts a few bits of the identifier, and these two are far
+              enough apart to stay distinguishable.
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="speech-text">What the assistant says</label>
+            <textarea id="speech-text" name="speech-text" maxlength="600"
+              placeholder="This is SecureBank calling about a recent transaction on your account."></textarea>
+            <p class="field-error" id="speech-text-error" role="alert" aria-live="polite"></p>
+            <p class="hint">Up to 600 characters. Spoken by Amazon Polly, then watermarked.</p>
+          </div>
+
+          <div class="field" aria-hidden="true" style="position:absolute;left:-9999px">
+            <label for="company-website">Company website</label>
+            <input type="text" id="company-website" name="company-website" tabindex="-1" autocomplete="off">
+          </div>
+
+          <div class="btn-row">
+            <button class="btn" type="submit">Generate watermarked audio</button>
+          </div>
+        </form>
+
+        <div class="result" id="generate-result" role="status" aria-live="polite" hidden></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <p style="margin:0">Built for the WeMakeDevs First Commit hackathon.</p>
+    <nav class="foot-links" aria-label="Footer">
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </nav>
+  </div>
+</footer>
+
+<div class="consent" id="consent" role="region" aria-label="Cookie consent" hidden>
+  <div class="wrap">
+    <p>
+      We would like to measure page performance and errors using AWS CloudWatch RUM,
+      which stores an identifier in your browser. Nothing loads until you choose.
+      See our <a href="/privacy.html">privacy policy</a>.
+    </p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" type="button" data-consent="decline">Decline</button>
+      <button class="btn" type="button" data-consent="accept">Accept</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/consent.js"></script>
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

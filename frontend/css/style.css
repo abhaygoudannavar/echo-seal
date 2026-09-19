@@ -1,0 +1,338 @@
+/* EchoSeal — design tokens and base styles.
+   Deliberately restrained: this is a security tool, so it should read like
+   infrastructure rather than a product launch page. One accent colour, small
+   radii, no gradients. */
+
+:root {
+  --ink:        #16191d;
+  --ink-soft:   #4a5158;
+  --ink-faint:  #6b737b;
+  --paper:      #fbfaf8;
+  --surface:    #ffffff;
+  --line:       #dfdcd6;
+  --line-soft:  #ecebe7;
+
+  --accent:      #14532d;   /* verified */
+  --accent-weak: #eaf2ec;
+  --warn:        #7c2d12;   /* unverified */
+  --warn-weak:   #fbeee7;
+  --focus:       #1d4ed8;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+
+  --measure: 34rem;
+  --radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:        #e8e6e1;
+    --ink-soft:   #b0b5ba;
+    --ink-faint:  #878d93;
+    --paper:      #141619;
+    --surface:    #1c1f23;
+    --line:       #32373d;
+    --line-soft:  #24282d;
+    --accent:      #86c9a0;
+    --accent-weak: #16261c;
+    --warn:        #e8a887;
+    --warn-weak:   #2a1a12;
+    --focus:       #7aa2f7;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible focus for keyboard users, suppressed for mouse clicks. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--line);
+  z-index: 100;
+}
+.skip-link:focus { left: 0.5rem; top: 0.5rem; }
+
+.wrap {
+  width: 100%;
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 0 16px;   /* phone gutter */
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.site-head {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.site-head .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 60px;
+  flex-wrap: wrap;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 1.05rem;
+}
+.brand svg { display: block; }
+
+.site-nav {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+.site-nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid transparent;
+}
+.site-nav a:hover { color: var(--ink); border-bottom-color: var(--line); }
+.site-nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* ── Type ────────────────────────────────────────────────────────────────── */
+
+h1, h2, h3 { line-height: 1.25; letter-spacing: -0.015em; margin: 0 0 0.5em; }
+h1 { font-size: 2rem; font-weight: 640; }
+h2 { font-size: 1.3rem; font-weight: 620; margin-top: 2.5rem; }
+h3 { font-size: 1.05rem; font-weight: 620; margin-top: 1.75rem; }
+
+p { margin: 0 0 1rem; max-width: var(--measure); }
+.lede { font-size: 1.1rem; color: var(--ink-soft); max-width: var(--measure); }
+
+a { color: var(--focus); text-underline-offset: 2px; }
+
+main { padding: 2.5rem 0 4rem; }
+
+.section { margin-top: 3rem; }
+
+/* ── Cards / panels ──────────────────────────────────────────────────────── */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+.panel + .panel { margin-top: 1rem; }
+
+.grid-2 {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) {
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+
+label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 560;
+  margin-bottom: 0.35rem;
+  color: var(--ink);
+}
+.hint {
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+  margin: 0.3rem 0 0;
+  max-width: var(--measure);
+}
+
+input[type="text"], textarea, select {
+  width: 100%;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.7rem;
+}
+textarea { resize: vertical; min-height: 5.5rem; }
+
+input[aria-invalid="true"], textarea[aria-invalid="true"] {
+  border-color: var(--warn);
+}
+.field { margin-bottom: 1.1rem; }
+.field-error {
+  color: var(--warn);
+  font-size: 0.85rem;
+  margin: 0.3rem 0 0;
+  min-height: 1.2em;
+}
+
+/* Square-ish by design: pill buttons were explicitly ruled out. */
+.btn {
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 560;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) { opacity: 0.88; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+.btn-secondary:hover:not(:disabled) { border-color: var(--ink-soft); opacity: 1; }
+.btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+
+/* ── Result states ───────────────────────────────────────────────────────── */
+
+.result {
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+  background: var(--surface);
+}
+.result[data-state="verified"]   { border-left-color: var(--accent); background: var(--accent-weak); }
+.result[data-state="unverified"] { border-left-color: var(--warn);   background: var(--warn-weak); }
+.result[data-state="error"]      { border-left-color: var(--ink-faint); }
+.result-title { font-weight: 640; font-size: 1.05rem; margin: 0 0 0.35rem; }
+.result[data-state="verified"] .result-title   { color: var(--accent); }
+.result[data-state="unverified"] .result-title { color: var(--warn); }
+.result p { margin: 0; font-size: 0.95rem; color: var(--ink-soft); }
+
+.meta {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+
+.note {
+  border-left: 2px solid var(--line);
+  padding-left: 1rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.steps { counter-reset: step; list-style: none; padding: 0; margin: 1.5rem 0 0; }
+.steps li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 2.25rem;
+  margin-bottom: 1.1rem;
+  max-width: var(--measure);
+}
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0; top: 0.1rem;
+  width: 1.5rem; height: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  display: grid; place-items: center;
+  color: var(--ink-soft);
+}
+
+.prose h2 { margin-top: 2.25rem; }
+.prose ul { max-width: var(--measure); padding-left: 1.2rem; }
+.prose li { margin-bottom: 0.5rem; }
+
+.site-foot {
+  border-top: 1px solid var(--line);
+  margin-top: 4rem;
+  padding: 1.75rem 0;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+.site-foot .wrap { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.site-foot a { color: var(--ink-soft); text-decoration: none; }
+.site-foot a:hover { text-decoration: underline; }
+.foot-links { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Spinner is the only motion on the site, and it is status feedback rather
+   than decoration, so it stays under reduced-motion too (slowed, not removed). */
+.spinner {
+  display: inline-block;
+  width: 0.9rem; height: 0.9rem;
+  border: 2px solid var(--line);
+  border-top-color: var(--ink-soft);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: -1px;
+  margin-right: 0.4rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2s; }
+  * { scroll-behavior: auto !important; }
+}
+
+/* ── Cookie consent ──────────────────────────────────────────────────────── */
+
+.consent {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding: 1rem 0;
+  z-index: 50;
+}
+.consent[hidden] { display: none; }
+.consent .wrap {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.consent p { margin: 0; font-size: 0.9rem; color: var(--ink-soft); max-width: 42rem; }

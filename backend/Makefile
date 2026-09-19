@@ -20,7 +20,7 @@ DOCKERFILE := Dockerfile
 ACCOUNT_ID := $(shell aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "NO_CREDENTIALS")
 ECR_URI    := $(ACCOUNT_ID).dkr.ecr.$(REGION).amazonaws.com/$(IMAGE)
 
-.PHONY: build test-local ecr push infra deploy seed all teardown help
+.PHONY: build test-local ecr push infra deploy seed all teardown warm warm-status unwarm help
 
 # ── Local (no AWS needed) ─────────────────────────────────────────────────────
 
@@ -126,6 +126,8 @@ all: push infra seed
 ## teardown: Delete the CloudFormation stack and all resources.
 ##           Empty the S3 bucket first or the stack deletion will fail.
 teardown:
+	-@aws events remove-targets --rule echoseal-warmup --ids warm --region $(REGION) 2>/dev/null
+	-@aws events delete-rule --name echoseal-warmup --region $(REGION) 2>/dev/null
 	@echo "Emptying S3 bucket before stack deletion..."
 	$(eval BUCKET := $(shell aws cloudformation describe-stacks \
 	  --stack-name $(STACK) --region $(REGION) \
@@ -142,3 +144,37 @@ teardown:
 
 help:
 	@grep -E '^## ' Makefile | sed 's/## //'
+
+## warm: Keep one execution environment alive with a 5-minute scheduled ping, so a
+##       cold start never lands on a judge. Provisioned concurrency would be the
+##       proper fix, but this account's Lambda concurrency limit is 10 and AWS
+##       requires 10 to stay unreserved, so none can be reserved without a quota
+##       increase. A ping does not reserve concurrency, so it works regardless.
+##       Costs roughly $0.04/day. Unlike provisioned concurrency this always hits
+##       $LATEST, so it needs no re-pinning after `make deploy`.
+warm:
+	@$(eval FN_ARN := $(shell aws lambda get-function --function-name echoseal-api \
+	  --region $(REGION) --query Configuration.FunctionArn --output text))
+	aws events put-rule --name echoseal-warmup --schedule-expression "rate(5 minutes)" \
+	  --region $(REGION) --query RuleArn --output text
+	@aws lambda add-permission --function-name echoseal-api \
+	  --statement-id echoseal-warmup --action lambda:InvokeFunction \
+	  --principal events.amazonaws.com --region $(REGION) >/dev/null 2>&1 || true
+	@printf '[{"Id":"warm","Arn":"%s","Input":"{\\"warmup\\":true}"}]' "$(FN_ARN)" > /tmp/echoseal-target.json
+	aws events put-targets --rule echoseal-warmup --region $(REGION) \
+	  --targets file:///tmp/echoseal-target.json \
+	  --query FailedEntryCount --output text
+	@rm -f /tmp/echoseal-target.json
+	@echo "Warmup ping scheduled every 5 minutes. Verify with: make warm-status"
+
+## warm-status: Check whether the warmup ping is active.
+warm-status:
+	@aws events describe-rule --name echoseal-warmup --region $(REGION) \
+	  --query "{Rule:Name,Schedule:ScheduleExpression,State:State}" --output table 2>/dev/null \
+	  || echo "  no warmup rule — run 'make warm'"
+
+## unwarm: Stop the warmup ping. Run after filming.
+unwarm:
+	-aws events remove-targets --rule echoseal-warmup --ids warm --region $(REGION)
+	-aws events delete-rule --name echoseal-warmup --region $(REGION)
+	@echo "Warmup ping removed. First request after idle will 503 again."
