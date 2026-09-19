@@ -1,0 +1,17 @@
+# EchoSeal Lambda — Python dependencies
+#
+# FIX 4: The Lambda base image (public.ecr.aws/lambda/python:3.11) is a minimal
+# runtime — it ships no ML packages. audioseal depends on torch, and pip will
+# pull the full CUDA build by default (~2.5 GB of GPU libraries Lambda cannot use).
+# Pin to the CPU-only wheel so the image stays manageable and the build succeeds.
+#
+# torchaudio is NOT listed. watermark.py uses soundfile + julius for all I/O and
+# resampling, so torchaudio is not needed.
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+audioseal
+julius
+soundfile
+numpy==1.26.4
+boto3

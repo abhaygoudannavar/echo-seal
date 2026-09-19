@@ -1,0 +1,211 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  EchoSeal backend — Lambda (container image), API Gateway HTTP API,
+  DynamoDB trust_registry, S3 audio bucket, IAM role.
+  Region: ap-south-1. Run `make infra` to deploy.
+
+Parameters:
+  ImageUri:
+    Type: String
+    Description: >
+      ECR image URI to deploy. Produced by `make push`.
+      Example: 123456789.dkr.ecr.ap-south-1.amazonaws.com/echoseal-lambda:latest
+  BucketSuffix:
+    Type: String
+    Default: echoseal-audio
+    Description: S3 bucket name prefix — actual name is <BucketSuffix>-<AccountId>
+
+Resources:
+
+  # ── DynamoDB ──────────────────────────────────────────────────────────────
+  # FIX 2: agent_id is type N (Number), not S (String).
+  # The handler does integer XOR for Hamming distance — string keys cause
+  # "0" vs 0 type mismatches and break nearest_agent().
+  TrustRegistry:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: trust_registry
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: agent_id
+          AttributeType: N
+      KeySchema:
+        - AttributeName: agent_id
+          KeyType: HASH
+      Tags:
+        - Key: Project
+          Value: EchoSeal
+
+  # ── S3 ────────────────────────────────────────────────────────────────────
+  AudioBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${BucketSuffix}-${AWS::AccountId}"
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods: [GET, PUT, HEAD]
+            AllowedOrigins: ["*"]
+            AllowedHeaders: ["*"]
+            MaxAge: 3600
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldAudio
+            Status: Enabled
+            ExpirationInDays: 7  # keep demo storage costs low
+      Tags:
+        - Key: Project
+          Value: EchoSeal
+
+  # ── IAM ───────────────────────────────────────────────────────────────────
+  # Scoped to the specific table ARN and bucket ARN — no Resource: "*" except
+  # polly:SynthesizeSpeech (Polly does not support resource-level permissions).
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: echoseal-lambda-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: echoseal-lambda-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: DynamoDBRegistry
+                Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                Resource: !GetAtt TrustRegistry.Arn
+
+              - Sid: S3BucketLevel
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt AudioBucket.Arn
+
+              - Sid: S3ObjectLevel
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                # Both bucket ARN and bucket/* are required — they are different resources.
+                Resource: !Sub "${AudioBucket.Arn}/*"
+
+              - Sid: Polly
+                Effect: Allow
+                Action:
+                  - polly:SynthesizeSpeech
+                # Polly does not support resource-level permissions.
+                Resource: "*"
+
+  # ── Lambda ────────────────────────────────────────────────────────────────
+  EchoSealFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: echoseal-api
+      PackageType: Image
+      Code:
+        ImageUri: !Ref ImageUri
+      Role: !GetAtt LambdaRole.Arn
+      # 3008 MB: Lambda scales CPU linearly with memory. torch inference on a
+      # 15 s clip is CPU-bound — less memory means proportionally slower inference.
+      MemorySize: 3008
+      # 120 s: cold start (load torch + models from disk) takes tens of seconds.
+      Timeout: 120
+      EphemeralStorage:
+        # Default 512 MB is enough for /tmp audio, but raised slightly as headroom.
+        Size: 1024
+      Environment:
+        Variables:
+          TRUST_REGISTRY_TABLE: trust_registry
+          AUDIO_BUCKET: !Sub "${BucketSuffix}-${AWS::AccountId}"
+          ECHOSEAL_LOCAL: "0"
+      Tags:
+        - Key: Project
+          Value: EchoSeal
+
+  # Allow API Gateway to invoke the Lambda
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt EchoSealFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  # ── API Gateway HTTP API ──────────────────────────────────────────────────
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: echoseal-api
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+
+  LambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub
+        - "arn:aws:apigateway:ap-south-1:lambda:path/2015-03-31/functions/${FnArn}/invocations"
+        - FnArn: !GetAtt EchoSealFunction.Arn
+      PayloadFormatVersion: "2.0"
+
+  RouteGenerate:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "POST /generate"
+      Target: !Sub "integrations/${LambdaIntegration}"
+
+  RouteVerify:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "POST /verify"
+      Target: !Sub "integrations/${LambdaIntegration}"
+
+  DefaultStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: "$default"
+      AutoDeploy: true
+
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${HttpApi}.execute-api.ap-south-1.amazonaws.com"
+    Description: "Base URL — share with Person 3 (frontend) and Person 4 (demo)"
+    Export:
+      Name: EchoSealApiUrl
+
+  BucketName:
+    Value: !Sub "${BucketSuffix}-${AWS::AccountId}"
+    Description: "S3 bucket for audio files"
+    Export:
+      Name: EchoSealBucketName
+
+  TableName:
+    Value: trust_registry
+    Description: "DynamoDB trust_registry table name"
+
+  FunctionName:
+    Value: echoseal-api
+    Description: "Lambda function name — use for `make deploy` and CloudWatch logs"
