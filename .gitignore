@@ -31,6 +31,7 @@ listen_*.wav
 # Local-only: internal project brief, and auto-generated agent tooling config
 # (AWS Agent Toolkit regenerates these per machine — nothing project-specific)
 context.md
+implementation_plan.md
 AGENTS.md
 CLAUDE.md
 .cursor/
