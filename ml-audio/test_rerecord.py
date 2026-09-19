@@ -50,13 +50,24 @@ def prepare():
 
 def _to_wav(path: str) -> str:
     """Phone recorders emit m4a; soundfile can't read it. Convert via ffmpeg."""
-    if Path(path).suffix.lower() in (".wav", ".flac", ".ogg"):
-        return path
+    src = Path(path).expanduser()
+    if not src.exists():
+        raise SystemExit(
+            f"No such file: {src}\n"
+            "Pass the path to YOUR recording — the one in the instructions is just an\n"
+            "example name. Transfer the phone recording to this Mac first, then run:\n"
+            "  python test_rerecord.py verify <path to that file>"
+        )
+    if src.suffix.lower() in (".wav", ".flac", ".ogg"):
+        return str(src)
     dst = Path(tempfile.mkdtemp()) / "converted.wav"
-    subprocess.run(
-        ["ffmpeg", "-y", "-i", path, "-ar", str(SAMPLE_RATE), "-ac", "1", str(dst)],
-        capture_output=True, check=True,
+    result = subprocess.run(
+        ["ffmpeg", "-y", "-i", str(src), "-ar", str(SAMPLE_RATE), "-ac", "1", str(dst)],
+        capture_output=True, text=True,
     )
+    if result.returncode != 0:
+        # Surface ffmpeg's own message; swallowing it makes failures undiagnosable.
+        raise SystemExit(f"ffmpeg could not read {src}:\n{result.stderr.strip()[-800:]}")
     return str(dst)
 
 
@@ -111,7 +122,7 @@ def verify(path: str):
 
     print()
     if dec_id == AGENT_ID and found:
-        print("PASS — watermark survived re-recording and the ID decoded correctly.")
+        print("PASS — watermark detected and the ID decoded correctly.")
     elif best and best[1] == AGENT_ID:
         print("PARTIAL — ID recovers in the best window but the whole-file score is")
         print("low. Trim the recording to just the spoken clip, or have the verifier")
