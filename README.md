@@ -48,7 +48,7 @@ Lambda ships as a container image rather than a zip because PyTorch won't fit in
 | Survives codecs (MP3, Opus, telephone ADPCM) | Working |
 | **Detected** after real speaker → phone-mic re-recording | Working at alpha 2.0 — 0.4659 whole-file, 0.7074 best window |
 | **Exact ID** recovered after re-recording | Fails — 11/16 bits survive, so exact lookup misses |
-| ID recovered via nearest-match on a 2-agent registry | Works on replayed bits; one end-to-end run still pending |
+| ID recovered via nearest-match on a 2-agent registry | **Verified end to end** — 0.6961 confidence, 3/16 bit errors, correct entity |
 | Backend, frontend, end-to-end | Not started |
 
 The re-recording rows are measured on a real phone, not simulated. Two findings
@@ -59,17 +59,28 @@ shaped the design:
 suppression, which strips a signal sitting 29 dB below the speech. With spatial audio
 off the same setup scored 0.2385, and at alpha 2.0 it reached 0.4659.
 
-**Detection survives the air; the exact 16-bit ID does not.** 11 of 16 bits come
-through (chance is 8), so `trust_registry` is matched by nearest Hamming distance
+**Detection survives the air; the exact 16-bit ID does not.** Only 11 to 13 of 16 bits
+come through (chance is 8), so `trust_registry` is matched by nearest Hamming distance
 rather than exact equality — see `nearest_agent()`. That caps the registry at two
-agents at the current error rate, which is why IDs must be chosen with
+agents at the observed error rate, which is why IDs must be chosen with
 `pick_agent_ids()` rather than picked arbitrarily.
+
+The full loop has been run end to end: watermarked speech played through a laptop
+speaker, recorded on a phone 15-30 cm away with spatial audio off, detected at 0.6961
+confidence with 3 of 16 bits corrupted, and resolved to the correct registered entity.
+That leaves 2 bits of margin against the 5-error budget, so recording conditions still
+matter — alpha 2.0, spatial audio off, phone close, volume up.
 
 ## What we are claiming
 
 Surviving real telecom-grade phone compression is genuinely hard and we are not
-claiming it. The scoped claim is narrower and demoable: the watermark survives
-**speaker playback → phone microphone re-recording**, filmed live.
+claiming it. The scoped claim is narrower, demoable, and now measured: the watermark
+survives **speaker playback → phone microphone re-recording** and still resolves to the
+right registered entity.
+
+What we do not claim: detecting AI-generated voices in general. An unwatermarked clip
+could be a human, a scammer, or a legitimate agent that has not adopted EchoSeal. This
+verifies known callers; it does not identify fakes.
 
 ## Getting started
 
