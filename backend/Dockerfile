@@ -42,17 +42,35 @@ COPY backend/lambda/watermark.py  ${LAMBDA_TASK_ROOT}/
 COPY ml-audio/audio/sample.wav ${LAMBDA_TASK_ROOT}/sample.wav
 
 # ── Model weights ─────────────────────────────────────────────────────────────
-# AudioSeal models (~300 MB total) are downloaded from HuggingFace on first use
-# into /root/.cache/audioseal/. They are NOT baked into the image because large
-# file downloads during `docker build` are unreliable (partial downloads corrupt
-# the zip, causing PytorchStreamReader errors — observed in practice).
+# Baked in at build time. This is not optional: a Lambda container filesystem is
+# READ-ONLY except for /tmp, so a runtime download into ~/.cache cannot write at
+# all — the function fails outright rather than merely running slowly. Even with
+# a writable path, pulling ~300 MB inside a 120 s timeout on every cold start
+# would not reliably finish.
 #
-# For LOCAL testing: mount a named volume so models download once and persist:
-#   docker run -v echoseal-model-cache:/root/.cache -e ECHOSEAL_LOCAL=1 ...
-# First request takes ~3-5 min (model download). All subsequent requests are fast.
-#
-# For Lambda (Suhaan): use provisioned concurrency to pre-warm the function so
-# the judge's first click isn't a 60-second cold start. The Lambda execution
-# environment persists the /tmp cache across warm invocations.
+# Downloading during build was previously avoided because a partial download
+# corrupts the checkpoint (PytorchStreamReader errors). The retry below handles
+# that: on failure it clears the cache and starts clean, then a final load
+# outside the loop fails the build if the weights are still unusable, so a broken
+# image can never reach ECR.
+# AudioSeal's bundled moshi SEANet decorates forward() with @torch_compile_lazy,
+# which invokes TorchInductor and shells out to a C++ compiler at RUNTIME. The Lambda
+# image has no gcc, so /generate dies with BackendCompilerFailed. (/verify survives —
+# the detector takes a different path.) It works on a dev Mac only because Xcode's
+# clang is present. moshi reads this flag when the decorator is applied, i.e. at
+# import time, so it has to be in the environment rather than set in Python.
+# Eager mode is marginally slower per call and avoids a compile on every cold start.
+ENV NO_TORCH_COMPILE=1
+
+ENV AUDIOSEAL_CACHE_DIR=/opt/audioseal
+RUN mkdir -p /opt/audioseal && cd ${LAMBDA_TASK_ROOT} && \
+    for attempt in 1 2 3; do \
+      echo "fetching model weights (attempt $attempt)" && \
+      python -c "from watermark import _get_generator, _get_detector; _get_generator(); _get_detector()" \
+        && break \
+        || { echo "attempt $attempt failed; clearing cache"; rm -rf /opt/audioseal/*; sleep 5; }; \
+    done && \
+    python -c "from watermark import _get_generator, _get_detector; _get_generator(); _get_detector(); print('weights verified, loaded from cache')" && \
+    du -sh /opt/audioseal
 
 CMD ["handler.lambda_handler"]

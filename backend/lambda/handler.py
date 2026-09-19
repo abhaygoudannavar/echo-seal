@@ -237,11 +237,22 @@ def handle_generate(event: dict) -> dict:
         s3_key = f"audio/agent_{agent_id}/watermarked.wav"
         audio_url = _publish_audio(wm_path, s3_key)
 
-    return _response(200, {
+        # In LOCAL mode the file:// path points inside the container and the temp
+        # directory is gone the moment this block exits, so it is useless to the
+        # caller. Return the bytes instead — same base64 convention /verify accepts,
+        # which lets the round-trip test actually run.
+        audio_b64 = (
+            base64.b64encode(open(wm_path, "rb").read()).decode() if LOCAL else None
+        )
+
+    payload = {
         "audio_url": audio_url,
         "agent_id": agent_id,
         "entity_name": registry[agent_id],
-    })
+    }
+    if audio_b64:
+        payload["audio_base64"] = audio_b64
+    return _response(200, payload)
 
 
 # ── /verify ───────────────────────────────────────────────────────────────────

@@ -55,7 +55,16 @@ def invoke(event: dict) -> dict:
 
 def verify_wav(wav_path: Path) -> dict:
     """Build a /verify event from a local WAV file and invoke."""
-    audio_b64 = base64.b64encode(wav_path.read_bytes()).decode()
+    return verify_b64(base64.b64encode(wav_path.read_bytes()).decode())
+
+
+def verify_b64(audio_b64: str) -> dict:
+    """Verify already-base64'd audio.
+
+    /generate in LOCAL mode returns audio_base64 rather than a readable path: its
+    file:// path is inside the container and its temp dir is deleted when the
+    request ends, so the host can never open it.
+    """
     event = {
         "rawPath": "/verify",
         "requestContext": {"http": {"method": "POST"}},
@@ -111,7 +120,7 @@ def check(name: str, resp: dict, expect_verified: bool, expect_entity: str | Non
 
 # ── Test 1 — demo_validate.wav → verified as SecureBank ───────────────────────
 print("\n=== Test 1: /verify demo_validate.wav → SecureBank AI Assistant ===")
-if not DEMO_VALIDATE.exists():
+if not DEMO_VALIDATE.is_file():
     print(f"  {SKIP}  {DEMO_VALIDATE} not found — copy from ml-audio/audio/")
     results.append(None)
 else:
@@ -122,7 +131,7 @@ else:
 # ── Test 2 — phone re-recording (optional, run if file available) ──────────────
 RERECORDING = Path(os.environ.get("ECHOSEAL_RERECORD", ""))
 print("\n=== Test 2: /verify phone re-recording (most important for demo) ===")
-if not RERECORDING.exists():
+if not RERECORDING.is_file():
     print(f"  {SKIP}  Set ECHOSEAL_RERECORD=<path> to run this test.")
     print("         Ask Person 1 for the recording, or re-record demo_validate.wav")
     print("         on a phone with spatial audio OFF, phone ~15-30 cm from speaker.")
@@ -134,7 +143,7 @@ else:
 
 # ── Test 3 — unwatermarked sample.wav → not verified ─────────────────────────
 print("\n=== Test 3: /verify sample.wav (no watermark) → not verified ===")
-if not SAMPLE_WAV.exists():
+if not SAMPLE_WAV.is_file():
     print(f"  {SKIP}  {SAMPLE_WAV} not found")
     results.append(None)
 else:
@@ -147,8 +156,13 @@ print("  Generating agent 2047 audio first via /generate ...")
 try:
     gen_resp = generate_wav(agent_id=2047)
     gen_body = gen_resp.get("body", {})
+    audio_b64 = gen_body.get("audio_base64", "")
     audio_url = gen_body.get("audio_url", "")
-    if audio_url.startswith("file://"):
+    if audio_b64:
+        r = verify_b64(audio_b64)
+        check("agent 2047 audio → Example Telecom Support (not SecureBank)", r,
+              expect_verified=True, expect_entity="Example Telecom Support")
+    elif audio_url.startswith("file://"):
         audio_path = Path(audio_url[len("file://"):])
         if audio_path.exists():
             r = verify_wav(audio_path)
@@ -169,8 +183,13 @@ print("\n=== Test 5: /generate agent 0 → /verify → resolves to agent 0 ===")
 try:
     gen_resp = generate_wav(agent_id=0)
     gen_body = gen_resp.get("body", {})
+    audio_b64 = gen_body.get("audio_base64", "")
     audio_url = gen_body.get("audio_url", "")
-    if audio_url.startswith("file://"):
+    if audio_b64:
+        r = verify_b64(audio_b64)
+        check("generate→verify loop closes for agent 0", r,
+              expect_verified=True, expect_entity="SecureBank AI Assistant")
+    elif audio_url.startswith("file://"):
         audio_path = Path(audio_url[len("file://"):])
         if audio_path.exists():
             r = verify_wav(audio_path)
