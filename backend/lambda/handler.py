@@ -61,7 +61,13 @@ _get_detector()
 
 # ── AWS clients (skipped in LOCAL mode) ──────────────────────────────────────
 _dynamodb = None if LOCAL else boto3.client("dynamodb", region_name=REGION)
-_s3 = None if LOCAL else boto3.client("s3", region_name=REGION)
+# endpoint_url is explicit because boto3 otherwise presigns against the global
+# s3.amazonaws.com host. For a bucket outside us-east-1 that returns a
+# TemporaryRedirect, and the signature is bound to the host so following the
+# redirect fails too — every presigned download link is dead on arrival.
+_s3 = None if LOCAL else boto3.client(
+    "s3", region_name=REGION, endpoint_url=f"https://s3.{REGION}.amazonaws.com"
+)
 _polly = None if LOCAL else boto3.client("polly", region_name=REGION)
 
 # ── Registry cache ────────────────────────────────────────────────────────────
@@ -297,7 +303,18 @@ def handle_verify(event: dict) -> dict:
             })
 
         # ── Whole-file detection ──────────────────────────────────────────────
-        whole_found, whole_decoded_id, whole_conf = verify_watermark(upload_path)
+        # Anything can arrive here — a browser sending webm, a truncated upload, an
+        # HTML error page. soundfile raises on all of them; a 400 saying what is wrong
+        # is far more useful to the frontend than a 500.
+        try:
+            whole_found, whole_decoded_id, whole_conf = verify_watermark(upload_path)
+        except Exception as exc:
+            logger.warning("Unreadable audio upload: %s", exc)
+            return _response(400, {
+                "error": "Could not read that audio. Send a WAV file "
+                         "(browser MediaRecorder output must be converted first).",
+                "detail": str(exc)[:200],
+            })
         logger.info(
             "Whole-file: found=%s id=%s conf=%.4f", whole_found, whole_decoded_id, whole_conf
         )
