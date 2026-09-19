@@ -36,12 +36,16 @@ from watermark import (
     verify_watermark,
 )
 
-AGENT_ID = 1337
+# Agent 0, not 1337: the trust registry holds 0 and 2047 (see pick_agent_ids).
+# Audio carrying an unregistered ID cannot verify at any recording quality, which
+# looks identical to a failed capture and wastes a lot of time.
+AGENT_ID = 0
 PLAYBACK = "audio/demo_playback.wav"
 
 
 def prepare():
-    out = embed_watermark("audio/sample.wav", AGENT_ID, output_path=PLAYBACK)
+    # alpha 2.0: at 1.0 a re-recorded clip scores below the detection threshold.
+    out = embed_watermark("audio/sample.wav", AGENT_ID, output_path=PLAYBACK, alpha=2.0)
     info = sf.info(out)
     print(f"Wrote {out}  ({info.duration:.1f}s, agent_id={AGENT_ID})")
     print("\nPlay this out of a speaker and record it on a phone ~15-30 cm away.")
