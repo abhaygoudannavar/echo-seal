@@ -51,9 +51,9 @@ def prepare():
 def _to_wav(path: str) -> str:
     """Phone recorders emit m4a; soundfile can't read it. Convert via ffmpeg."""
     src = Path(path).expanduser()
-    if not src.exists():
+    if not src.is_file():
         raise SystemExit(
-            f"No such file: {src}\n"
+            f"Not a readable file: {src or '(empty path)'}\n"
             "Pass the path to YOUR recording — the one in the instructions is just an\n"
             "example name. Transfer the phone recording to this Mac first, then run:\n"
             "  python test_rerecord.py verify <path to that file>"
