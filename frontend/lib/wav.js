@@ -37,11 +37,9 @@ async function decodeToMono16k(arrayBuffer) {
   const source = offline.createBufferSource();
   source.buffer = decoded;
 
-  // Downmix to mono explicitly. Connecting a stereo source straight to a mono
-  // destination would drop a channel rather than average it.
-  const merger = offline.createChannelMerger(1);
-  source.connect(merger);
-  merger.connect(offline.destination);
+  // The context is mono, so connecting straight to the destination down-mixes a
+  // stereo source by averaging the channels, per the Web Audio down-mix rules.
+  source.connect(offline.destination);
   source.start(0);
 
   const rendered = await offline.startRendering();
@@ -82,11 +80,44 @@ function encodeWav(samples, sampleRate) {
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
+/* Bring the recording into the level range the detector works best at.
+ *
+ * Automatic gain control is disabled during capture because it mangles the
+ * watermark, which leaves the user aiming at a level by hand. Measured: a capture
+ * peaking at 0.07 scored 0.0007, while the same audio scaled up scored 0.17.
+ *
+ * This is only a scale factor, so it cannot create information. It does not undo
+ * clipping, and on a recording that was too quiet at the microphone it lifts the
+ * noise along with the signal. It removes the easy failure, not the hard one.
+ *
+ * The gain is capped so near-silence is not amplified into loud hiss, and the
+ * target sits below full scale to leave headroom.
+ */
+const TARGET_PEAK = 0.7;
+const MAX_GAIN = 12;
+
+function normalize(samples) {
+  let peak = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const a = Math.abs(samples[i]);
+    if (a > peak) peak = a;
+  }
+  if (peak === 0) return samples;
+
+  const gain = Math.min(TARGET_PEAK / peak, MAX_GAIN);
+  // Already at or above target: leave it alone rather than pulling it down, since
+  // a loud capture is usually clipped and quieter will not undo that.
+  if (gain <= 1) return samples;
+
+  for (let i = 0; i < samples.length; i++) samples[i] *= gain;
+  return samples;
+}
+
 /** Convert a File or Blob of any supported type into a 16 kHz mono WAV Blob. */
 export async function toWav(fileOrBlob) {
   const buf = await fileOrBlob.arrayBuffer();
   const samples = await decodeToMono16k(buf);
-  return encodeWav(samples, TARGET_RATE);
+  return encodeWav(normalize(samples), TARGET_RATE);
 }
 
 /** Base64 for the JSON request body, chunked so large files do not blow the stack. */
