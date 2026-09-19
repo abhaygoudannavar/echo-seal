@@ -46,14 +46,24 @@ Lambda ships as a container image rather than a zip because PyTorch won't fit in
 | ID round-trip across full 0–65535 range | Working — exact on every value tested |
 | Rejects non-watermarked audio | Working — scores ≤0.008, never false-positives |
 | Survives codecs (MP3, Opus, telephone ADPCM) | Working |
-| Survives **real** speaker → phone-mic re-recording | **Not yet verified — needs hardware** |
+| **Detected** after real speaker → phone-mic re-recording | Working at alpha 2.0 — 0.4659 whole-file, 0.7074 best window |
+| **Exact ID** recovered after re-recording | Fails — 11/16 bits survive, so exact lookup misses |
+| ID recovered via nearest-match on a 2-agent registry | Works on replayed bits; one end-to-end run still pending |
 | Backend, frontend, end-to-end | Not started |
 
-That last watermarking row is the claim the demo rests on, and it has **not** been
-confirmed. The numbers in `ml-audio/README.md` come from software simulation of the
-acoustic path: band-limiting, room reverb, additive noise, codec round-trips.
-Simulation does not capture real loudspeaker distortion, phone mic AGC, or actual room
-acoustics. `ml-audio/test_rerecord.py` is the harness for the real test.
+The re-recording rows are measured on a real phone, not simulated. Two findings
+shaped the design:
+
+**Recording the clip with iPhone spatial audio enabled destroys the watermark**
+(confidence 0.0000). Spatial recording runs multi-mic beamforming and noise
+suppression, which strips a signal sitting 29 dB below the speech. With spatial audio
+off the same setup scored 0.2385, and at alpha 2.0 it reached 0.4659.
+
+**Detection survives the air; the exact 16-bit ID does not.** 11 of 16 bits come
+through (chance is 8), so `trust_registry` is matched by nearest Hamming distance
+rather than exact equality — see `nearest_agent()`. That caps the registry at two
+agents at the current error rate, which is why IDs must be chosen with
+`pick_agent_ids()` rather than picked arbitrarily.
 
 ## What we are claiming
 

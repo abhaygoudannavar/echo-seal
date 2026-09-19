@@ -155,3 +155,53 @@ def verify_watermark(audio_path: str) -> Tuple[bool, Optional[int], float]:
     found = confidence >= DETECTION_THRESHOLD
     decoded_id = _bits_to_int(message_bits[0]) if found else None
     return found, decoded_id, confidence
+
+
+def nearest_agent(
+    decoded_id: int, registered_ids: list[int], max_bit_errors: int = 5
+) -> Optional[int]:
+    """Match a noisy decoded ID to the closest registered agent.
+
+    Over-the-air re-recording corrupts a few of the 16 bits — measured at 5 errors on
+    a phone re-recording — so exact lookup in trust_registry will usually miss. Because
+    only a handful of agents are ever registered, the registry doubles as an
+    error-correcting codebook: pick the nearest ID by Hamming distance and reject
+    anything too far to be trusted.
+
+    Register IDs far apart in Hamming distance or this cannot work. Two IDs need 11+
+    bits between them to absorb 5 errors — 0 and 65535 are the natural pair. See
+    pick_agent_ids().
+
+    Returns the matching agent ID, or None when nothing is close enough or two
+    candidates tie (ambiguous, so unsafe to guess).
+    """
+    if not registered_ids:
+        return None
+    scored = sorted((bin(decoded_id ^ rid).count("1"), rid) for rid in registered_ids)
+    best_d, best_id = scored[0]
+    if best_d > max_bit_errors:
+        return None
+    if len(scored) > 1 and scored[1][0] == best_d:
+        return None
+    return best_id
+
+
+def pick_agent_ids(count: int, min_distance: int = 11) -> list[int]:
+    """Choose agent IDs spaced far enough apart to survive bit errors.
+
+    min_distance of 2*e+1 absorbs e bit errors. At the measured 5 errors that means 11,
+    which only fits 2 agents in 16 bits. Raising the agent count means tolerating fewer
+    errors, so improve the audio path before widening the registry.
+    """
+    chosen: list[int] = [0]
+    for candidate in range(1, 1 << NBITS):
+        if len(chosen) >= count:
+            break
+        if all(bin(candidate ^ c).count("1") >= min_distance for c in chosen):
+            chosen.append(candidate)
+    if len(chosen) < count:
+        raise ValueError(
+            f"cannot fit {count} IDs at min_distance={min_distance}; "
+            f"only found {len(chosen)}"
+        )
+    return chosen
