@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EchoSeal</title>
+<meta name="description" content="EchoSeal — Zero-Trust Voice Provenance. Verify AI voices on phone calls.">
+<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+/* ─── Reset ─── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #050508;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Intro Container ─── */
+.intro {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 100; background: #050508;
+}
+
+/* ─── Background Orbs ─── */
+.intro__bg { position: absolute; inset: 0; overflow: hidden; }
+
+.intro__orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(120px); opacity: 0;
+}
+.intro__orb--1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%);
+  top: -10%; left: -5%;
+}
+.intro__orb--2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  bottom: -15%; right: -10%;
+}
+.intro__orb--3 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+  top: 40%; left: 50%; transform: translateX(-50%);
+}
+
+/* ─── Waveform Canvas ─── */
+.intro__waveform {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%; max-width: 900px; height: 200px;
+  opacity: 0;
+}
+
+/* ─── Content ─── */
+.intro__content {
+  position: relative; z-index: 10; text-align: center;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 1.5rem;
+}
+
+/* ─── Shield Icon ─── */
+.intro__icon {
+  width: 64px; height: 64px;
+  opacity: 0; transform: scale(0.5);
+}
+.intro__icon svg {
+  width: 100%; height: 100%;
+  color: rgba(20, 184, 166, 0.9);
+}
+
+/* ─── Title ─── */
+.intro__title {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: clamp(4rem, 12vw, 10rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #ffffff;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+.intro__title .char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(100%) rotateX(-80deg);
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+}
+
+/* ─── Subtitle ─── */
+.intro__subtitle {
+  font-size: clamp(0.85rem, 2vw, 1.15rem);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* ─── Line Divider ─── */
+.intro__line {
+  width: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(20, 184, 166, 0.5), transparent);
+}
+
+/* ─── Enter Button ─── */
+.intro__enter {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem; font-weight: 500;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0; transform: translateY(20px);
+  transition: border-color 0.3s, background 0.3s, color 0.3s;
+}
+.intro__enter:hover {
+  border-color: rgba(20, 184, 166, 0.5);
+  background: rgba(20, 184, 166, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+}
+.intro__enter svg {
+  width: 16px; height: 16px;
+  transition: transform 0.3s;
+}
+.intro__enter:hover svg { transform: translateX(4px); }
+
+/* ─── Corner Labels ─── */
+.intro__corner {
+  position: absolute; bottom: 2rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.1em;
+  opacity: 0;
+}
+.intro__corner--left { left: 2rem; }
+.intro__corner--right { right: 2rem; }
+
+/* ─── Scan Line ─── */
+.intro__scanline {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(20, 184, 166, 0.3) 20%,
+    rgba(20, 184, 166, 0.6) 50%,
+    rgba(20, 184, 166, 0.3) 80%,
+    transparent 100%);
+  opacity: 0; z-index: 20;
+}
+
+/* ─── Particles ─── */
+.intro__particles {
+  position: absolute; inset: 0;
+  overflow: hidden; z-index: 1;
+}
+.intro__particle {
+  position: absolute;
+  width: 2px; height: 2px;
+  background: rgba(20, 184, 166, 0.4);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 600px) {
+  .intro__corner { display: none; }
+  .intro__icon { width: 48px; height: 48px; }
+}
+</style>
+</head>
+<body>
+
+<div class="intro" id="intro">
+  <!-- Background -->
+  <div class="intro__bg">
+    <div class="intro__orb intro__orb--1" id="orb1"></div>
+    <div class="intro__orb intro__orb--2" id="orb2"></div>
+    <div class="intro__orb intro__orb--3" id="orb3"></div>
+  </div>
+
+  <!-- Particles -->
+  <div class="intro__particles" id="particles"></div>
+
+  <!-- Scan line -->
+  <div class="intro__scanline" id="scanline"></div>
+
+  <!-- Waveform -->
+  <canvas class="intro__waveform" id="waveform"></canvas>
+
+  <!-- Center content -->
+  <div class="intro__content">
+    <div class="intro__icon" id="icon">
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M32 4L8 16v16c0 14.4 10.24 27.84 24 32 13.76-4.16 24-17.6 24-32V16L32 4z"
+              stroke="currentColor" stroke-width="2.5" fill="none"/>
+        <path d="M20 32h4.8l3.9-9.6 5.7 19.2 3.9-9.6H47"
+              stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+
+    <h1 class="intro__title" id="title"></h1>
+
+    <p class="intro__subtitle" id="subtitle">Zero-Trust Voice Provenance</p>
+
+    <div class="intro__line" id="line"></div>
+
+    <a class="intro__enter" id="enter" href="/index.html">
+      Enter
+      <svg viewBox="0 0 16 16" fill="none">
+        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor"
+              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+  </div>
+
+  <!-- Corner labels -->
+  <span class="intro__corner intro__corner--left" id="cornerL">
+    WeMakeDevs First Commit Hackathon
+  </span>
+  <span class="intro__corner intro__corner--right" id="cornerR">
+    Built with AudioSeal &#183; AWS
+  </span>
+</div>
+
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+/* ── Inject title characters ── */
+(function () {
+  var titleEl = document.getElementById('title');
+  var word = 'ECHOSEAL';
+  for (var i = 0; i < word.length; i++) {
+    var span = document.createElement('span');
+    span.className = 'char';
+    span.textContent = word[i];
+    titleEl.appendChild(span);
+  }
+
+  /* ── Create particles ── */
+  var pc = document.getElementById('particles');
+  for (var j = 0; j < 40; j++) {
+    var dot = document.createElement('div');
+    dot.className = 'intro__particle';
+    dot.style.left = Math.random() * 100 + '%';
+    dot.style.top = Math.random() * 100 + '%';
+    pc.appendChild(dot);
+  }
+
+  /* ── Waveform Canvas ── */
+  var canvas = document.getElementById('waveform');
+  var ctx = canvas.getContext('2d');
+  var waveOpacity = 0;
+
+  function resizeCanvas() {
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function drawWaveform(time) {
+    var w = canvas.getBoundingClientRect().width;
+    var h = canvas.getBoundingClientRect().height;
+    ctx.clearRect(0, 0, w, h);
+    var cy = h / 2;
+    var seg = 120;
+    var sw = w / seg;
+
+    /* Main wave */
+    ctx.beginPath();
+    ctx.moveTo(0, cy);
+    for (var k = 0; k <= seg; k++) {
+      var x = k * sw;
+      var n = k / seg;
+      var env = Math.sin(n * Math.PI);
+      var w1 = Math.sin(n * 8 + time * 0.002) * 25;
+      var w2 = Math.sin(n * 14 - time * 0.003) * 12;
+      var w3 = Math.sin(n * 22 + time * 0.0015) * 6;
+      var sp = Math.sin(n * 3.5 + time * 0.001) * Math.sin(n * 7 + time * 0.0008) * 20;
+      ctx.lineTo(x, cy + (w1 + w2 + w3 + sp) * env * waveOpacity);
+    }
+    var g = ctx.createLinearGradient(0, 0, w, 0);
+    g.addColorStop(0, 'rgba(20,184,166,0)');
+    g.addColorStop(0.2, 'rgba(20,184,166,0.3)');
+    g.addColorStop(0.5, 'rgba(20,184,166,0.5)');
+    g.addColorStop(0.8, 'rgba(20,184,166,0.3)');
+    g.addColorStop(1, 'rgba(20,184,166,0)');
+    ctx.strokeStyle = g;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    /* Mirror wave */
+    ctx.beginPath();
+    ctx.moveTo(0, cy);
+    for (var m = 0; m <= seg; m++) {
+      var x2 = m * sw;
+      var n2 = m / seg;
+      var env2 = Math.sin(n2 * Math.PI);
+      var v1 = Math.sin(n2 * 8 + time * 0.002) * 25;
+      var v2 = Math.sin(n2 * 14 - time * 0.003) * 12;
+      var v3 = Math.sin(n2 * 22 + time * 0.0015) * 6;
+      var sp2 = Math.sin(n2 * 3.5 + time * 0.001) * Math.sin(n2 * 7 + time * 0.0008) * 20;
+      ctx.lineTo(x2, cy - (v1 + v2 + v3 + sp2) * env2 * waveOpacity * 0.4);
+    }
+    var g2 = ctx.createLinearGradient(0, 0, w, 0);
+    g2.addColorStop(0, 'rgba(20,184,166,0)');
+    g2.addColorStop(0.3, 'rgba(20,184,166,0.1)');
+    g2.addColorStop(0.5, 'rgba(20,184,166,0.15)');
+    g2.addColorStop(0.7, 'rgba(20,184,166,0.1)');
+    g2.addColorStop(1, 'rgba(20,184,166,0)');
+    ctx.strokeStyle = g2;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    requestAnimationFrame(drawWaveform);
+  }
+  requestAnimationFrame(drawWaveform);
+
+  /* ── GSAP Intro Timeline ── */
+  var tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+  /* Orbs fade in */
+  tl.to('.intro__orb', { opacity: 1, duration: 2, stagger: 0.3 }, 0);
+
+  /* Orb floating */
+  gsap.to('#orb1', { x: 30, y: 20, duration: 8, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+  gsap.to('#orb2', { x: -25, y: -15, duration: 10, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+  gsap.to('#orb3', { x: 15, y: -25, duration: 12, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+
+  /* Particles */
+  tl.to('.intro__particle', {
+    opacity: function () { return Math.random() * 0.6 + 0.1; },
+    duration: 1.5,
+    stagger: { each: 0.03, from: 'random' }
+  }, 0.3);
+
+  document.querySelectorAll('.intro__particle').forEach(function (p) {
+    gsap.to(p, {
+      y: function () { return (Math.random() - 0.5) * 200; },
+      x: function () { return (Math.random() - 0.5) * 100; },
+      duration: function () { return 6 + Math.random() * 8; },
+      ease: 'sine.inOut', yoyo: true, repeat: -1
+    });
+  });
+
+  /* Waveform */
+  tl.to(canvas, { opacity: 0.6, duration: 1.5 }, 0.5);
+  tl.to({}, {
+    duration: 1.5,
+    onUpdate: function () { waveOpacity = this.progress(); }
+  }, 0.5);
+
+  /* Scan line sweep */
+  tl.to('#scanline', { opacity: 1, duration: 0.1 }, 0.8);
+  tl.to('#scanline', { top: '100%', duration: 1.2, ease: 'power2.inOut' }, 0.8);
+  tl.to('#scanline', { opacity: 0, duration: 0.2 }, 1.9);
+
+  /* Icon */
+  tl.to('#icon', { opacity: 1, scale: 1, duration: 1, ease: 'elastic.out(1, 0.6)' }, 1.0);
+
+  /* Characters */
+  tl.to('.char', {
+    opacity: 1, y: '0%', rotateX: 0,
+    duration: 0.9, ease: 'back.out(1.4)', stagger: 0.06
+  }, 1.3);
+
+  /* Subtitle */
+  tl.to('#subtitle', { opacity: 1, y: 0, duration: 0.8 }, 2.0);
+
+  /* Line */
+  tl.to('#line', { width: '200px', duration: 0.8, ease: 'power2.inOut' }, 2.2);
+
+  /* Enter button */
+  tl.to('#enter', { opacity: 1, y: 0, duration: 0.8 }, 2.4);
+
+  /* Corners */
+  tl.to('.intro__corner', { opacity: 1, duration: 0.6 }, 2.6);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+/* Verify Page Styles */
+.verify-page {
+    min-height: 100vh;
+    padding: 150px 20px 80px;
+    background-color: var(--color-black-deep);
+    color: var(--color-white);
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.verify-container {
+    max-width: 600px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.verify-title {
+    font-family: 'Epilogue', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.verify-subtitle {
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+.verify-form .field {
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.verify-form label {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.verify-form input[type="file"] {
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    color: var(--color-white);
+}
+
+.field-error {
+    color: var(--color-pink);
+    font-size: 0.9rem;
+    min-height: 20px;
+}
+
+.record-btn-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+    padding: 20px;
+    border: 1px dashed rgba(255,255,255,0.3);
+    border-radius: 12px;
+}
+
+.btn {
+    background: var(--color-white);
+    color: var(--color-black);
+    border: none;
+    padding: 12px 24px;
+    font-family: 'Epilogue', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--color-white);
+    border: 1px solid var(--color-white);
+    width: auto;
+}
+
+.btn-secondary:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.verify-result {
+    margin-top: 30px;
+    padding: 20px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid transparent;
+}
+
+.verify-result[data-state="verified"] {
+    border-color: #4ade80;
+    background: rgba(74, 222, 128, 0.1);
+}
+
+.verify-result[data-state="unverified"] {
+    border-color: var(--color-pink);
+    background: rgba(255, 153, 153, 0.1);
+}
+
+.verify-result[data-state="error"] {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.result-title {
+    font-family: 'Epilogue', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.result-meta {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.5);
+    margin-top: 10px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(0,0,0,0.1);
+    border-radius: 50%;
+    border-top-color: currentColor;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
