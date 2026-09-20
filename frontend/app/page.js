@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { openGraph } from '../lib/site';
 import GenerateForm from '../components/GenerateForm';
+import Marquee from '../components/Marquee';
 
 const DESC =
   'Banks watermark their AI voice assistants with EchoSeal. Anyone receiving a call can ' +
@@ -40,6 +41,8 @@ export default function Home() {
           How it works
         </a>
       </div>
+
+      <Marquee />
 
       <section className="section" id="how">
         <h2>How it works</h2>

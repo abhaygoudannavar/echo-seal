@@ -4,19 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 function Mark() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-      <circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M5.5 10h1.6l1.3-3.2 1.9 6.4 1.3-3.2h2.9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  // Plain <img>: next/image wants a loader and the static export has none, and at
+  // 26px a 111 KB PNG is not worth a pipeline.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img className="brand__logo" src="/img/logo.png" alt="" width="26" height="26" />;
 }
 
 /* Client component purely so aria-current tracks the route without every page

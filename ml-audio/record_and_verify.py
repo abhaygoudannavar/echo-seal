@@ -28,7 +28,7 @@ from pathlib import Path
 
 import soundfile as sf
 
-PLAYBACK = "audio/demo_playback.wav"
+PLAYBACK = "audio/demo_validate.wav"
 CAPTURE = "audio/rerecorded_capture.wav"
 # A wireless Continuity mic takes ~3 s to come up, so a short lead-in silently loses
 # the start of the clip. Measured: a 1.0 s lead-in produced a capture 2.7 s short.
@@ -78,7 +78,7 @@ def main():
     name = dict(devices).get(device, "?")
 
     if not Path(PLAYBACK).is_file():
-        raise SystemExit(f"{PLAYBACK} missing — run: python test_rerecord.py prepare")
+        raise SystemExit(f"{PLAYBACK} missing — regenerate with test_rerecord.py prepare")
     duration = sf.info(PLAYBACK).duration
     total = duration + LEAD_IN + TAIL
 

@@ -1,6 +1,7 @@
 import './globals.css';
 import { Header, Footer } from '../components/Chrome';
 import ConsentBanner from '../components/ConsentBanner';
+import IntroScreen from '../components/IntroScreen';
 import { SITE_URL } from '../lib/site';
 
 /* metadataBase makes the per-page canonical and og:image values absolute.
@@ -39,6 +40,7 @@ export default function RootLayout({ children }) {
         </main>
         <Footer />
         <ConsentBanner />
+        <IntroScreen />
       </body>
     </html>
   );
