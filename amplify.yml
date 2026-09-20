@@ -1,0 +1,24 @@
+version: 1
+# Amplify build spec. The repo holds three projects (frontend, backend, ml-audio),
+# so every command is scoped to frontend/ and the artifact path is explicit.
+#
+# `npm run build` produces a static export into frontend/out because next.config.mjs
+# sets output: 'export'. Amplify serves those files directly; there is no Node server.
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd frontend
+        # ci rather than install: builds from the lockfile, so a deploy cannot pick up
+        # a different dependency version than the one tested locally.
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: frontend/out
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - frontend/node_modules/**/*
