@@ -547,3 +547,114 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] {
 }
 .team__name { font-size: 0.92rem; font-weight: 560; margin-top: 0.25rem; }
 .team__role { font-size: 0.82rem; color: var(--ink-faint); }
+
+/* ── Verify form ──────────────────────────────────────────────────────────── */
+
+.verify {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-top: 1.75rem;
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2.25rem 1.25rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone:hover { border-color: var(--ink-faint); }
+/* The native input is visually hidden, so its focus ring would be invisible.
+   Move the ring onto the label the user actually sees. */
+#audio-file:focus-visible + .dropzone,
+.dropzone:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.dropzone--over {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-weak);
+}
+.dropzone--filled {
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  border-style: solid;
+  cursor: default;
+}
+.dropzone__icon { width: 26px; height: 26px; color: var(--ink-faint); flex: none; }
+.dropzone--filled .dropzone__icon { color: var(--accent); }
+.dropzone__title { font-weight: 560; font-size: 0.98rem; }
+.dropzone__hint {
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+  max-width: 30rem;
+  line-height: 1.5;
+}
+.dropzone__name {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Divider with a centred label, drawn with borders so it needs no extra markup. */
+.verify__or {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 1.4rem 0;
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.verify__or::before,
+.verify__or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.verify__record { display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; }
+.verify__record .hint { margin: 0; }
+
+.rec-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: currentColor;
+  animation: rec-pulse 1.4s ease-in-out infinite;
+}
+@keyframes rec-pulse { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) {
+  .rec-dot { animation: none; }
+}
+
+.hint--good { color: var(--accent); }
+
+.verify__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--line-soft);
+}
+.verify__actions .hint { margin: 0; }
+
+.btn-lg { padding: 0.7rem 1.5rem; font-size: 1rem; }
+.btn-sm { padding: 0.35rem 0.8rem; font-size: 0.85rem; flex: none; }

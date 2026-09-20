@@ -116,9 +116,15 @@ export default function IntroScreen() {
       })
     );
 
+    const onKey = (e) => {
+      if (e.key === 'Escape') dismiss();
+    };
+    window.addEventListener('keydown', onKey);
+
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
+      window.removeEventListener('keydown', onKey);
       tl.kill();
       floats.forEach((f) => f.kill());
       document.body.style.overflow = '';
@@ -131,12 +137,16 @@ export default function IntroScreen() {
     } catch {
       /* not persisting is fine */
     }
-    gsap.to(root.current, {
-      opacity: 0,
-      duration: 0.5,
-      ease: 'power2.inOut',
-      onComplete: () => setShow(false),
-    });
+    // The overlay covers the whole page, so a fade that never completes would trap
+    // the visitor with no way through. Hide unconditionally after the fade's
+    // duration regardless of whether GSAP reports back.
+    const hide = () => setShow(false);
+    setTimeout(hide, 600);
+    if (root.current) {
+      gsap.to(root.current, { opacity: 0, duration: 0.5, ease: 'power2.inOut', onComplete: hide });
+    } else {
+      hide();
+    }
   }
 
   if (!show) return null;

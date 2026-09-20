@@ -11,40 +11,66 @@ const MAX_BYTES = 25 * 1024 * 1024;
 // is present; whether it resolves to an organisation is a separate question.
 const DETECTION_THRESHOLD = 0.25;
 
+const ACCEPT = 'audio/*,.wav,.m4a,.mp3,.ogg,.webm,.aac,.caf,.qta';
+
+function humanSize(bytes) {
+  return bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    : `${Math.round(bytes / 1024)} KB`;
+}
+
 export default function VerifyForm() {
   const fileRef = useRef(null);
-  const recordedRef = useRef(null);
   const recorderRef = useRef(null);
 
-  const [fileError, setFileError] = useState('');
+  // The chosen audio, whichever way it arrived. Held in state rather than read off
+  // the input on submit, because a recording never touches the input at all.
+  const [source, setSource] = useState(null);
+  const [sourceLabel, setSourceLabel] = useState('');
+  const [error, setError] = useState('');
+  const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordState, setRecordState] = useState('');
-  // Held in state (not a ref) so the meter mounts as soon as capture starts.
   const [stream, setStream] = useState(null);
-  // 'quiet' | 'good' | 'loud' from the meter, so the level target is visible
-  // rather than something to guess at.
   const [level, setLevel] = useState('quiet');
   const [result, setResult] = useState(null);
 
-  // Recording is only offered where it can work, but the capability check must
-  // happen after mount rather than during render: navigator does not exist during
-  // the static export, so a render-time check makes the server emit markup without
-  // this block while the client emits it with, which is a hydration mismatch.
-  // Starting false means both renders agree, then it flips on once mounted.
+  // Capability check must run after mount: navigator does not exist during the
+  // static export, and branching on it during render is a hydration mismatch.
   const [canRecord, setCanRecord] = useState(false);
-
   useEffect(() => {
     setCanRecord(!!navigator.mediaDevices?.getUserMedia && !!window.MediaRecorder);
   }, []);
 
-  function onFileChange() {
-    setFileError('');
-    recordedRef.current = null;
-    const f = fileRef.current?.files?.[0];
-    if (f && f.size > MAX_BYTES) {
-      setFileError('That file is larger than 25 MB. Trim it to the part with speech.');
+  function accept(file, label) {
+    if (!file) return;
+    if (file.size > MAX_BYTES) {
+      setError(`That file is ${humanSize(file.size)}. Trim it to the part with speech, under 25 MB.`);
+      return;
     }
+    setError('');
+    setResult(null);
+    setSource(file);
+    setSourceLabel(label || `${file.name} · ${humanSize(file.size)}`);
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    // Trust the decoder, not the extension: a mislabelled file still decodes or
+    // fails on its own merits, and browsers report inconsistent types for audio.
+    accept(file);
+  }
+
+  function clearSource() {
+    setSource(null);
+    setSourceLabel('');
+    setError('');
+    setResult(null);
+    if (fileRef.current) fileRef.current.value = '';
   }
 
   async function toggleRecording() {
@@ -53,18 +79,12 @@ export default function VerifyForm() {
       return;
     }
     try {
-      // These three are ON by default and each one destroys the watermark.
-      // getUserMedia is tuned for voice calls: noise suppression strips low-level
-      // content, which is precisely what a mark sitting 29 dB under the speech is,
-      // and echo cancellation actively subtracts audio the machine is playing.
-      // Measured elsewhere in this project: iPhone spatial audio, which applies the
-      // same class of processing, drove detection to exactly 0.0000.
+      // All three are ON by default and each destroys the watermark. getUserMedia is
+      // tuned for voice calls: noise suppression strips low-level content, which is
+      // exactly what a mark 29 dB under the speech is, and echo cancellation
+      // subtracts audio the machine is playing.
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       });
       setStream(mediaStream);
       const chunks = [];
@@ -76,40 +96,29 @@ export default function VerifyForm() {
       rec.onstop = () => {
         mediaStream.getTracks().forEach((t) => t.stop());
         setStream(null);
-        recordedRef.current = new Blob(chunks, { type: rec.mimeType });
-        if (fileRef.current) fileRef.current.value = '';
-        setFileError('');
         setRecording(false);
-        setRecordState('Recording captured. Select Check this call.');
+        const blob = new Blob(chunks, { type: rec.mimeType });
+        accept(blob, `Recording · ${humanSize(blob.size)}`);
+        setRecordState('Recording captured.');
       };
       setLevel('quiet');
       rec.start();
       setRecording(true);
-      setRecordState('Recording. Play the call audio now.');
+      setRecordState('Recording. Play the call now.');
     } catch {
       setRecording(false);
-      setRecordState(
-        'Microphone access was refused, so recording is unavailable. Upload a file instead.'
-      );
+      setRecordState('Microphone access was refused. Upload a file instead.');
     }
   }
 
   async function onSubmit(e) {
     e.preventDefault();
-    setFileError('');
-    setResult(null);
-
-    const source = recordedRef.current || fileRef.current?.files?.[0];
     if (!source) {
-      setFileError('Choose an audio file or record the call first.');
-      fileRef.current?.focus();
+      setError('Add a recording first, either by choosing a file or recording one.');
       return;
     }
-    if (source.size > MAX_BYTES) {
-      setFileError('That file is larger than 25 MB. Trim it to the part with speech.');
-      return;
-    }
-
+    setError('');
+    setResult(null);
     setBusy(true);
     try {
       // Everything is converted, including files already named .wav: the extension
@@ -127,17 +136,16 @@ export default function VerifyForm() {
           meta: `agent ${data.agent_id} · confidence ${Number(data.confidence).toFixed(3)}`,
         });
       } else if (Number(data.confidence) >= DETECTION_THRESHOLD) {
-        // A watermark is present but its identifier did not survive intact, so it
-        // matched no registered organisation. Reporting this as "no watermark" would
-        // be wrong and would hide the real cause, which is almost always a distorted
-        // or clipped recording.
+        // A watermark is present but its identifier did not survive intact. Reporting
+        // this as "no watermark" would hide the real cause, which is almost always a
+        // distorted or clipped recording.
         setResult({
           state: 'unverified',
           title: 'Watermark detected, but the sender could not be identified',
           body:
             'A watermark is present, but too damaged to match a registered organisation. ' +
-            'This usually means the recording was too loud and clipped. Lower the playback ' +
-            'volume, move the microphone further away, and record it again.',
+            'This usually means the recording was too loud and clipped. Lower the volume, ' +
+            'move the microphone further away, and try again.',
           meta: `confidence ${Number(data.confidence).toFixed(3)}`,
         });
       } else {
@@ -159,91 +167,128 @@ export default function VerifyForm() {
   }
 
   return (
-    <div className="panel" style={{ marginTop: '1.75rem' }}>
-      <form onSubmit={onSubmit} noValidate>
-        <div className="field">
-          <label htmlFor="audio-file">Recording</label>
-          <input
-            type="file"
-            id="audio-file"
-            ref={fileRef}
-            onChange={onFileChange}
-            accept="audio/*,.wav,.m4a,.mp3,.ogg,.webm,.aac,.caf"
-            aria-invalid={fileError ? 'true' : 'false'}
-            aria-describedby="audio-file-error"
-          />
-          <p className="field-error" id="audio-file-error" role="alert" aria-live="polite">
-            {fileError}
-          </p>
-          <p className="hint">
-            Any common audio format, up to 25 MB. It is converted in your browser before
-            sending, so large files upload quickly.
-          </p>
-        </div>
+    <form className="verify" onSubmit={onSubmit} noValidate>
+      {/* The native control is kept for keyboard and assistive tech, and driven by
+          the dropzone label. Hiding it with `hidden` would take it out of the
+          accessibility tree entirely. */}
+      <input
+        type="file"
+        id="audio-file"
+        ref={fileRef}
+        className="visually-hidden"
+        accept={ACCEPT}
+        onChange={(e) => accept(e.target.files?.[0])}
+        aria-describedby="audio-file-error"
+      />
 
-        {canRecord ? (
-          <div className="field">
-            <label htmlFor="record-btn">Or record it now</label>
-            <div className="btn-row">
-              <button
-                className="btn btn-secondary"
-                type="button"
-                id="record-btn"
-                onClick={toggleRecording}
-              >
-                {recording ? 'Stop recording' : recordedRef.current ? 'Record again' : 'Start recording'}
-              </button>
-              <span className="hint" aria-live="polite" style={{ margin: 0 }}>
-                {recordState}
-              </span>
-            </div>
-            {recording && stream ? (
-              <>
-                <LevelMeter stream={stream} onLevel={setLevel} />
-                {level === 'loud' ? (
-                  <p className="field-error" role="alert" style={{ minHeight: 0 }}>
-                    Too loud. Peaks are clipping, which corrupts the watermark. Turn the
-                    volume down or move further away.
-                  </p>
-                ) : level === 'quiet' ? (
-                  <p className="hint" role="status" style={{ margin: 0 }}>
-                    Too quiet. Turn the volume up or move closer, until the bars fill
-                    roughly half the height.
-                  </p>
-                ) : (
-                  <p className="hint" role="status" style={{ margin: 0, color: 'var(--accent)' }}>
-                    Level looks good. Keep it here.
-                  </p>
-                )}
-              </>
-            ) : null}
-            <p className="hint">
-              Play the call on a speaker and hold this device near it. The watermark
-              survives being played and re-recorded. If the bars stay flat, the
-              microphone is not hearing the playback.
-            </p>
-          </div>
-        ) : null}
-
-        <div className="btn-row">
-          <button className="btn" type="submit" disabled={busy}>
-            {busy ? (
-              <>
-                <span className="spinner" aria-hidden="true" />
-                Checking
-              </>
-            ) : (
-              'Check this call'
-            )}
+      {source ? (
+        <div className="dropzone dropzone--filled">
+          <svg className="dropzone__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 18V6l10-2v12" stroke="currentColor" strokeWidth="1.6"
+                  strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="6.5" cy="18" r="2.5" stroke="currentColor" strokeWidth="1.6" />
+            <circle cx="16.5" cy="16" r="2.5" stroke="currentColor" strokeWidth="1.6" />
+          </svg>
+          <span className="dropzone__name">{sourceLabel}</span>
+          <button className="btn btn-secondary btn-sm" type="button" onClick={clearSource}>
+            Remove
           </button>
         </div>
-      </form>
+      ) : (
+        <label
+          htmlFor="audio-file"
+          className={`dropzone${dragging ? ' dropzone--over' : ''}`}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+        >
+          <svg className="dropzone__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" stroke="currentColor" strokeWidth="1.6"
+                  strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3" stroke="currentColor"
+                  strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+          <span className="dropzone__title">Drop a recording here, or choose a file</span>
+          <span className="dropzone__hint">
+            Any common audio format, up to 25 MB. It is converted in your browser, so
+            large files still upload quickly.
+          </span>
+        </label>
+      )}
+
+      <p className="field-error" id="audio-file-error" role="alert" aria-live="polite">
+        {error}
+      </p>
+
+      {canRecord ? (
+        <>
+          <div className="verify__or"><span>or</span></div>
+
+          <div className="verify__record">
+            <button
+              className={`btn ${recording ? '' : 'btn-secondary'}`}
+              type="button"
+              onClick={toggleRecording}
+            >
+              {recording ? (
+                <>
+                  <span className="rec-dot" aria-hidden="true" />
+                  Stop recording
+                </>
+              ) : (
+                'Record from this device'
+              )}
+            </button>
+            <span className="hint" aria-live="polite">{recordState}</span>
+          </div>
+
+          {recording && stream ? (
+            <>
+              <LevelMeter stream={stream} onLevel={setLevel} />
+              {level === 'loud' ? (
+                <p className="field-error" role="alert" style={{ minHeight: 0 }}>
+                  Too loud. Peaks are clipping, which corrupts the watermark. Turn the
+                  volume down or move further away.
+                </p>
+              ) : level === 'quiet' ? (
+                <p className="hint" role="status" style={{ margin: 0 }}>
+                  Too quiet. Turn the volume up or move closer, until the bars fill about
+                  half the height.
+                </p>
+              ) : (
+                <p className="hint hint--good" role="status" style={{ margin: 0 }}>
+                  Level looks good. Keep it here.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="hint">
+              Play the call on another device and hold this one near it. A Mac cannot
+              hear its own speakers, so you need two devices.
+            </p>
+          )}
+        </>
+      ) : null}
+
+      <div className="verify__actions">
+        <button className="btn btn-lg" type="submit" disabled={busy || !source}>
+          {busy ? (
+            <>
+              <span className="spinner" aria-hidden="true" />
+              Checking
+            </>
+          ) : (
+            'Check this call'
+          )}
+        </button>
+        {busy ? <span className="hint">This can take up to 30 seconds.</span> : null}
+      </div>
 
       {result ? (
         <Result state={result.state} title={result.title} meta={result.meta}>
           <p>{result.body}</p>
         </Result>
       ) : null}
-    </div>
+    </form>
   );
 }
