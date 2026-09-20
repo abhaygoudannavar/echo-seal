@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://echoseal.example/sitemap.txt
+Sitemap: https://main.d27dukljkss9nd.amplifyapp.com/sitemap.txt

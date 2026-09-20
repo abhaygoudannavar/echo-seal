@@ -8,15 +8,16 @@ import Link from 'next/link';
    injected only after someone accepts: a banner that shows while the tracker
    already runs is decoration, not consent.
 
-   RUM_CONFIG stays null until the Amplify domain exists, because an app monitor
-   is bound to its domain. The banner behaves correctly either way. */
+   The guest role is scoped to rum:PutRumEvents on this app monitor alone, so these
+   values being public in the bundle grants nothing beyond sending telemetry here.
+   That is inherent to browser RUM. */
 const STORAGE_KEY = 'echoseal.consent';
 
 const RUM_CONFIG = {
-  applicationId: null, // set after `aws rum create-app-monitor`
+  applicationId: 'f48cceb6-51e9-4d35-bcef-3dbf0f1be493',
   applicationRegion: 'ap-south-1',
-  identityPoolId: null,
-  guestRoleArn: null,
+  identityPoolId: 'ap-south-1:c8ac8149-ba2b-4c9f-a113-8040cc5050f4',
+  guestRoleArn: 'arn:aws:iam::988573433187:role/echoseal-rum-guest',
 };
 
 function startAnalytics() {

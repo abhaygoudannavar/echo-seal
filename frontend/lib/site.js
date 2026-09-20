@@ -1,9 +1,9 @@
 // Single source of truth for absolute URLs in metadata.
 //
-// MUST be replaced with the real Amplify domain before launch: canonical links
-// and og:image are absolute, and a wrong value makes search engines index the
-// wrong host and breaks every social preview.
-export const SITE_URL = 'https://echoseal.example';
+// Canonical links and og:image are absolute, so this must match the domain the
+// site is actually served from or search engines index the wrong host and every
+// social preview breaks. Update it here and in public/sitemap.txt together.
+export const SITE_URL = 'https://main.d27dukljkss9nd.amplifyapp.com';
 
 export const API_URL = 'https://mzvlf6prc2.execute-api.ap-south-1.amazonaws.com';
 
