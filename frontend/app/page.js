@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { openGraph } from '../lib/site';
 import GenerateForm from '../components/GenerateForm';
 import Marquee from '../components/Marquee';
+import Team from '../components/Team';
 
 const DESC =
   'Banks watermark their AI voice assistants with EchoSeal. Anyone receiving a call can ' +
@@ -96,6 +97,8 @@ export default function Home() {
         </p>
         <GenerateForm />
       </section>
+
+      <Team />
     </>
   );
 }

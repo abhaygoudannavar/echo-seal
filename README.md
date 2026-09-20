@@ -49,7 +49,9 @@ Lambda ships as a container image rather than a zip because PyTorch won't fit in
 | **Detected** after real speaker → phone-mic re-recording | Working at alpha 2.0 — 0.4659 whole-file, 0.7074 best window |
 | **Exact ID** recovered after re-recording | Fails — 11/16 bits survive, so exact lookup misses |
 | ID recovered via nearest-match on a 2-agent registry | **Verified end to end** — 0.6961 confidence, 3/16 bit errors, correct entity |
-| Backend, frontend, end-to-end | Not started |
+| Backend deployed (Lambda, API Gateway, DynamoDB, S3) | **Live** |
+| Frontend deployed (Next.js static export on Amplify) | **Live** |
+| Browser recording → verify, end to end | **Working** |
 
 The re-recording rows are measured on a real phone, not simulated. Two findings
 shaped the design:
@@ -70,6 +72,30 @@ speaker, recorded on a phone 15-30 cm away with spatial audio off, detected at 0
 confidence with 3 of 16 bits corrupted, and resolved to the correct registered entity.
 That leaves 2 bits of margin against the 5-error budget, so recording conditions still
 matter — alpha 2.0, spatial audio off, phone close, volume up.
+
+## Live
+
+- Site: https://main.d2ylqawe7qumqu.amplifyapp.com
+- API: `https://mzvlf6prc2.execute-api.ap-south-1.amazonaws.com` (`/generate`, `/verify`)
+
+Pushing to `main` rebuilds and redeploys the frontend automatically.
+
+## Three things that destroy the watermark
+
+Every one of them is a feature designed to clean up speech, and every one treats an
+inaudible mark as noise to remove. Finding them was most of the work.
+
+| Processing | Effect |
+|---|---|
+| iPhone spatial audio recording | Confidence 0.0000, watermark gone entirely |
+| Browser `getUserMedia` defaults (noise suppression, echo cancellation, AGC) | Watermark stripped during capture |
+| macOS echo cancellation, same device playing and recording | 0.005 to 0.025, unusable |
+
+A Mac cancels its own speaker output out of its own microphone, so same-device
+capture cannot work at all. Verification needs two devices.
+
+Clipping is the other killer: a capture pinned at full scale still detects at 0.55 but
+loses 9 of 16 ID bits, which reads as a failure for a different reason.
 
 ## What we are claiming
 

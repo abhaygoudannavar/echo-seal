@@ -519,3 +519,31 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] {
 @media (max-width: 640px) {
   .intro__corner { display: none; }
 }
+
+/* ── Team ─────────────────────────────────────────────────────────────────── */
+
+.team {
+  list-style: none;
+  padding: 0;
+  margin: 1.75rem 0 0;
+  display: grid;
+  gap: 1.5rem 1rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 720px) {
+  .team { grid-template-columns: repeat(4, 1fr); }
+}
+.team__member { display: flex; flex-direction: column; gap: 0.35rem; }
+.team__photo {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  /* The photos are already black and white; this keeps any future one consistent. */
+  filter: grayscale(1);
+  background: var(--surface);
+}
+.team__name { font-size: 0.92rem; font-weight: 560; margin-top: 0.25rem; }
+.team__role { font-size: 0.82rem; color: var(--ink-faint); }
