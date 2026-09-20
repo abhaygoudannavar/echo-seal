@@ -26,8 +26,6 @@ export default function VerifyForm() {
   // rather than something to guess at.
   const [level, setLevel] = useState('quiet');
   const [result, setResult] = useState(null);
-  // DEBUG: object URL of the converted WAV actually sent to the API.
-  const [debugUrl, setDebugUrl] = useState(null);
 
   // Recording is only offered where it can work, but the capability check must
   // happen after mount rather than during render: navigator does not exist during
@@ -118,12 +116,6 @@ export default function VerifyForm() {
       // says nothing reliable about the contents, and the API reads 16 kHz mono
       // PCM only.
       const wav = await toWav(source);
-      // DEBUG: keep the exact bytes that were sent, so a failing capture can be
-      // downloaded and measured offline. Remove once recording is confirmed working.
-      setDebugUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return URL.createObjectURL(wav);
-      });
       const wav_base64 = await toBase64(wav);
       const data = await postJson('/verify', { wav_base64 });
 
@@ -251,15 +243,6 @@ export default function VerifyForm() {
         <Result state={result.state} title={result.title} meta={result.meta}>
           <p>{result.body}</p>
         </Result>
-      ) : null}
-
-      {debugUrl ? (
-        <p className="hint" style={{ marginTop: '0.75rem' }}>
-          <a href={debugUrl} download="echoseal-captured.wav">
-            Download the exact audio that was checked
-          </a>{' '}
-          (diagnostic)
-        </p>
       ) : null}
     </div>
   );

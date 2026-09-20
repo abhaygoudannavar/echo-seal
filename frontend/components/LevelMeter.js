@@ -76,16 +76,22 @@ export default function LevelMeter({ stream, onLevel }) {
         const a = Math.abs(time[i] - 128) / 128;
         if (a > peak) peak = a;
       }
-      // Decay the held peak so the reading follows the recording rather than
-      // latching on one loud moment.
-      peakHold = Math.max(peak, peakHold * 0.97);
+      // Hold the peak across gaps between words. At ~60fps this retains roughly
+      // 90% after a second and 55% after five, so natural pauses in speech do not
+      // flip the reading back to "quiet" while someone is clearly talking. A fast
+      // decay made the guidance flicker on every pause, which is worse than useless.
+      peakHold = Math.max(peak, peakHold * 0.998);
 
       // Measured targets: a capture peaking near full scale clipped and corrupted
       // 9 of 16 ID bits; one peaking at 0.07 left the mark below the noise floor
       // and scored 0.0007. The usable window sits between.
-      let next = 'quiet';
-      if (pinned / time.length > 0.005 || peakHold > 0.97) next = 'loud';
-      else if (peakHold > 0.25) next = 'good';
+      // Clipping is judged on the instantaneous frame, since even a brief flat-topped
+      // peak corrupts bits. Quiet is judged on the held peak, so it only reports
+      // "too quiet" once the input has genuinely stayed low, not between words.
+      let next;
+      if (pinned / time.length > 0.005 || peak > 0.97) next = 'loud';
+      else if (peakHold > 0.22) next = 'good';
+      else next = 'quiet';
 
       if (next !== levelState) {
         levelState = next;
