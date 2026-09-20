@@ -5,7 +5,13 @@
 // social preview breaks. Update it here and in public/sitemap.txt together.
 export const SITE_URL = 'https://main.d2ylqawe7qumqu.amplifyapp.com';
 
-export const API_URL = 'https://mzvlf6prc2.execute-api.ap-south-1.amazonaws.com';
+// Deployed API by default. Override to run entirely offline against the local
+// Lambda container via backend/local-proxy.mjs, which is the fallback if the
+// venue network dies during a demo:
+//   NEXT_PUBLIC_API_URL=http://localhost:8787 npm run dev
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  'https://mzvlf6prc2.execute-api.ap-south-1.amazonaws.com';
 
 /* A page-level `openGraph` export REPLACES the layout's rather than deep-merging,
    so any page defining its own title silently loses the inherited image. Build
