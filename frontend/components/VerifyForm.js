@@ -19,6 +19,41 @@ function humanSize(bytes) {
     : `${Math.round(bytes / 1024)} KB`;
 }
 
+function MicIcon() {
+  return (
+    <svg className="btn__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M5 11a7 7 0 0014 0M12 18v3" stroke="currentColor" strokeWidth="1.7"
+            strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg className="btn__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <rect x="7" y="5" width="4" height="14" rx="1.2" />
+      <rect x="13" y="5" width="4" height="14" rx="1.2" />
+    </svg>
+  );
+}
+
+function ResumeIcon() {
+  return (
+    <svg className="btn__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5.5v13a1 1 0 001.54.84l10-6.5a1 1 0 000-1.68l-10-6.5A1 1 0 008 5.5z" />
+    </svg>
+  );
+}
+
+function StopIcon() {
+  return (
+    <svg className="btn__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </svg>
+  );
+}
+
 export default function VerifyForm() {
   const fileRef = useRef(null);
   const recorderRef = useRef(null);
@@ -31,6 +66,7 @@ export default function VerifyForm() {
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [recordState, setRecordState] = useState('');
   const [stream, setStream] = useState(null);
   const [level, setLevel] = useState('quiet');
@@ -73,11 +109,26 @@ export default function VerifyForm() {
     if (fileRef.current) fileRef.current.value = '';
   }
 
-  async function toggleRecording() {
-    if (recorderRef.current && recorderRef.current.state === 'recording') {
-      recorderRef.current.stop();
-      return;
+  function togglePause() {
+    const rec = recorderRef.current;
+    if (!rec) return;
+    if (rec.state === 'recording') {
+      rec.pause();
+      setPaused(true);
+      setRecordState('Paused.');
+    } else if (rec.state === 'paused') {
+      rec.resume();
+      setPaused(false);
+      setRecordState('Recording. Play the call now.');
     }
+  }
+
+  function stopRecording() {
+    // stop() is valid from both the recording and paused states.
+    if (recorderRef.current) recorderRef.current.stop();
+  }
+
+  async function startRecording() {
     try {
       // All three are ON by default and each destroys the watermark. getUserMedia is
       // tuned for voice calls: noise suppression strips low-level content, which is
@@ -97,6 +148,7 @@ export default function VerifyForm() {
         mediaStream.getTracks().forEach((t) => t.stop());
         setStream(null);
         setRecording(false);
+        setPaused(false);
         const blob = new Blob(chunks, { type: rec.mimeType });
         accept(blob, `Recording · ${humanSize(blob.size)}`);
         setRecordState('Recording captured.');
@@ -104,9 +156,11 @@ export default function VerifyForm() {
       setLevel('quiet');
       rec.start();
       setRecording(true);
+      setPaused(false);
       setRecordState('Recording. Play the call now.');
     } catch {
       setRecording(false);
+      setPaused(false);
       setRecordState('Microphone access was refused. Upload a file instead.');
     }
   }
@@ -225,26 +279,43 @@ export default function VerifyForm() {
           <div className="verify__or"><span>or</span></div>
 
           <div className="verify__record">
-            <button
-              className={`btn ${recording ? '' : 'btn-secondary'}`}
-              type="button"
-              onClick={toggleRecording}
-            >
-              {recording ? (
-                <>
-                  <span className="rec-dot" aria-hidden="true" />
-                  Stop recording
-                </>
-              ) : (
-                'Record from this device'
-              )}
-            </button>
+            {recording ? (
+              <>
+                {/* Icon-only, so each carries its own label. aria-pressed would be
+                    wrong: these are actions, not a toggle state. */}
+                <button
+                  className="btn btn-icon btn-secondary"
+                  type="button"
+                  onClick={togglePause}
+                  aria-label={paused ? 'Resume recording' : 'Pause recording'}
+                  title={paused ? 'Resume' : 'Pause'}
+                >
+                  {paused ? <ResumeIcon /> : <PauseIcon />}
+                </button>
+                <button
+                  className="btn btn-icon"
+                  type="button"
+                  onClick={stopRecording}
+                  aria-label="Stop recording"
+                  title="Stop"
+                >
+                  <StopIcon />
+                </button>
+              </>
+            ) : (
+              <button className="btn btn-secondary" type="button" onClick={startRecording}>
+                <MicIcon />
+                Record the call
+              </button>
+            )}
+            {recording && stream && !paused ? (
+              <LevelMeter stream={stream} onLevel={setLevel} />
+            ) : null}
             <span className="hint" aria-live="polite">{recordState}</span>
           </div>
 
           {recording && stream ? (
             <>
-              <LevelMeter stream={stream} onLevel={setLevel} />
               {level === 'loud' ? (
                 <p className="field-error" role="alert" style={{ minHeight: 0 }}>
                   Too loud. Peaks are clipping, which corrupts the watermark. Turn the

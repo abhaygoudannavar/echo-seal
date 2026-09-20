@@ -199,6 +199,12 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] {
 
 /* Square-ish by design: pill buttons were explicitly ruled out. */
 .btn {
+  /* inline-flex, not inline-block: an icon and a label inside a button must sit on
+     one line and share a baseline. gap spaces them, so neither needs a margin. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   font: inherit;
   font-size: 0.95rem;
   font-weight: 560;
@@ -309,7 +315,6 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   vertical-align: -1px;
-  margin-right: 0.4rem;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
@@ -337,21 +342,15 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] {
 }
 .consent p { margin: 0; font-size: 0.9rem; color: var(--ink-soft); max-width: 42rem; }
 
-/* Live input level while recording. Sized by its container; the canvas backing
-   store is set in JS for devicePixelRatio. `color` and `border-top-color` are read
-   from here by the canvas, which cannot resolve CSS custom properties itself. */
+/* Compact input-level indicator, sized in JS for devicePixelRatio. `color`,
+   `border-top-color` and `outline-color` are read from here by the canvas, which
+   cannot resolve CSS custom properties itself. */
 .level-meter {
   display: block;
-  width: 100%;
-  height: 44px;
-  margin: 0.75rem 0 0.25rem;
-  color: var(--ink-soft);
+  color: var(--accent);
   border-top-color: var(--line);
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  /* read by the canvas for the clipping state */
   outline-color: var(--warn);
+  flex: none;
 }
 
 /* ── Brand mark ───────────────────────────────────────────────────────────── */
@@ -658,3 +657,15 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] {
 
 .btn-lg { padding: 0.7rem 1.5rem; font-size: 1rem; }
 .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.85rem; flex: none; }
+
+/* Icon-only controls: square, so a pause and a stop sit as a matched pair. */
+.btn-icon {
+  padding: 0;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.btn__icon { width: 17px; height: 17px; display: block; }
