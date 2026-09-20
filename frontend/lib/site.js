@@ -3,7 +3,7 @@
 // Canonical links and og:image are absolute, so this must match the domain the
 // site is actually served from or search engines index the wrong host and every
 // social preview breaks. Update it here and in public/sitemap.txt together.
-export const SITE_URL = 'https://main.d27dukljkss9nd.amplifyapp.com';
+export const SITE_URL = 'https://main.d2ylqawe7qumqu.amplifyapp.com';
 
 export const API_URL = 'https://mzvlf6prc2.execute-api.ap-south-1.amazonaws.com';
 
