@@ -110,7 +110,8 @@ verifies known callers; it does not identify fakes.
 
 ## Getting started
 
-The watermarking module is the only part with code so far:
+**Watermarking** (`ml-audio/`) — the embed and verify functions, plus the robustness
+tests behind every number on this page:
 
 ```bash
 cd ml-audio
@@ -118,7 +119,27 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-See [ml-audio/README.md](ml-audio/README.md) for the API, measured results, and the
-integration notes the backend needs.
+**Frontend** (`frontend/`) — Next.js static export:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+**Backend** (`backend/`) — the Lambda container. Runs fully offline with stubs, so no
+AWS credentials are needed to work on it:
+
+```bash
+cd backend
+make test-local
+```
+
+If the network is down during a demo, the whole thing runs locally: start the
+container, run `node backend/local-proxy.mjs`, and launch the frontend with
+`NEXT_PUBLIC_API_URL=http://localhost:8787`. Verification still genuinely happens.
+
+See [ml-audio/README.md](ml-audio/README.md) for the watermarking API and measured
+results, and [backend/README.md](backend/README.md) for the deploy steps.
 
 AudioSeal is MIT licensed (Meta).
